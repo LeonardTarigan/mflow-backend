@@ -7,15 +7,25 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum EmployeeRole {
+  ADMIN
+  DOKTER
+  PERAWAT
+  BIDAN
+  FARMASI
+  APOTEKER
+  STAFF
+}
+
 model Employee {
-  id       String  @id @db.VarChar(100)
-  nip      String  @unique @db.VarChar(16)
-  name     String  @db.VarChar(100)
-  role     String  @db.VarChar(50)
-  email    String  @unique @db.VarChar(100)
-  phone    String  @db.VarChar(50)
-  password String  @db.VarChar(100)
-  token    String? @db.VarChar(100)
+  id       String       @id @db.VarChar(100)
+  nip      String       @unique @db.VarChar(16)
+  name     String       @db.VarChar(100)
+  role     EmployeeRole
+  email    String       @unique @db.VarChar(100)
+  phone    String       @db.VarChar(50)
+  password String       @db.VarChar(100)
+  token    String?      @db.VarChar(100)
 
   @@map("employees")
 }

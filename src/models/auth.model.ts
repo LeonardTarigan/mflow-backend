@@ -1,3 +1,5 @@
+import { $Enums } from '@prisma/client';
+
 export class AuthLoginRequest {
   nip: string;
   password: string;
@@ -8,6 +10,6 @@ export class AuthResponse {
   name: string;
   email: string;
   phone: string;
-  role: string;
+  role: $Enums.EmployeeRole;
   token?: string;
 }
