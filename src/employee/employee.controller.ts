@@ -1,9 +1,9 @@
 import { Body, Controller, HttpCode, Post } from '@nestjs/common';
-import { ApiResponse } from 'src/models/api.model';
+import { ApiResponse } from 'src/common/api.model';
 import {
   AddEmployeeClientRequest,
   AddEmployeeResponse,
-} from 'src/models/employee.model';
+} from 'src/employee/employee.model';
 import { EmployeeService } from './employee.service';
 
 @Controller('/api/employees')

@@ -1,9 +1,9 @@
 import { HttpException, Inject, Injectable } from '@nestjs/common';
 import * as brcrypt from 'bcrypt';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
+import { AuthLoginRequest, AuthResponse } from 'src/auth/auth.model';
 import { PrismaService } from 'src/common/prisma.service';
 import { ValidationService } from 'src/common/validation.service';
-import { AuthLoginRequest, AuthResponse } from 'src/models/auth.model';
 import { v4 as uuid } from 'uuid';
 import { Logger } from 'winston';
 import { AuthValidation } from './auth.validation';

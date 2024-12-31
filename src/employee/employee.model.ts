@@ -1,10 +1,10 @@
-import { $Enums } from '@prisma/client';
+import { EmployeeRole } from '@prisma/client';
 
 export class AddEmployeeClientRequest {
   name: string;
   email: string;
   phone: string;
-  role: $Enums.EmployeeRole;
+  role: EmployeeRole;
 }
 
 export class AddEmployeeServiceRequest extends AddEmployeeClientRequest {
@@ -18,6 +18,6 @@ export class AddEmployeeResponse {
   name: string;
   email: string;
   phone: string;
-  role: $Enums.EmployeeRole;
+  role: EmployeeRole;
   token?: string;
 }
