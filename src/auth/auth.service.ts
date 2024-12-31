@@ -30,7 +30,7 @@ export class AuthService {
       },
     });
 
-    if (!user) throw new HttpException('Username or password is invalid', 401);
+    if (!user) throw new HttpException('Username atau password salah!', 401);
 
     const isPasswordValid = await brcrypt.compare(
       loginRequest.password,
@@ -38,7 +38,7 @@ export class AuthService {
     );
 
     if (!isPasswordValid)
-      throw new HttpException('Username or password is invalid', 401);
+      throw new HttpException('Username atau password salah!', 401);
 
     user = await this.prismaService.employee.update({
       where: {

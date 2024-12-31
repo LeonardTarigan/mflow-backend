@@ -12,6 +12,7 @@ import {
 import { v4 as uuid } from 'uuid';
 import { Logger } from 'winston';
 import { EmployeeValidation } from './employee.validation';
+import { MailerService } from '@nestjs-modules/mailer';
 
 @Injectable()
 export class EmployeeService {
@@ -19,6 +20,7 @@ export class EmployeeService {
     private validationService: ValidationService,
     @Inject(WINSTON_MODULE_PROVIDER) private logger: Logger,
     private prismaService: PrismaService,
+    private readonly mailerService: MailerService,
   ) {}
 
   async generateNip(role: EmployeeRole): Promise<string> {
@@ -43,6 +45,28 @@ export class EmployeeService {
     return `${year}${roleCode}${paddedSequence}`;
   }
 
+  generatePassword(role: EmployeeRole, nip: string): string {
+    const roleMap = {
+      ADMIN: 'ADM',
+      DOKTER: 'DKT',
+      PERAWAT: 'PRW',
+      BIDAN: 'BDN',
+      FARMASI: 'FRM',
+      APOTEKER: 'APT',
+      STAFF: 'STF',
+    };
+
+    const roleCode = roleMap[role].split('').reverse().join('') || 'USR';
+
+    const nipSuffix = nip.slice(-4).split('').reverse().join('');
+
+    const specialChars = ['!', '@', '#', '$', '%', '*', '?'];
+    const specialChar =
+      specialChars[Math.floor(Math.random() * specialChars.length)];
+
+    return `${roleCode}${nipSuffix}${specialChar}`;
+  }
+
   async addEmployee(
     request: AddEmployeeClientRequest,
   ): Promise<AddEmployeeResponse> {
@@ -50,7 +74,7 @@ export class EmployeeService {
 
     const generatedId = uuid();
     const generatedNip = await this.generateNip(request.role);
-    const generatedPassword = 'test';
+    const generatedPassword = this.generatePassword(request.role, generatedNip);
 
     const addEmployeeRequest =
       this.validationService.validate<AddEmployeeServiceRequest>(
@@ -70,7 +94,7 @@ export class EmployeeService {
     });
 
     if (totalWithSameEmail != 0) {
-      throw new HttpException('Email is already registered!', 400);
+      throw new HttpException(`Email ${request.email} sudah terdaftar!`, 400);
     }
 
     addEmployeeRequest.password = await brcrypt.hash(
@@ -81,6 +105,30 @@ export class EmployeeService {
     const employee = await this.prismaService.employee.create({
       data: addEmployeeRequest,
     });
+
+    const html = `
+      <p>Halo <strong>${employee.name}</strong>,</p>
+      <p>Selamat bergabung di tim kami! Berikut adalah detail akun Anda:</p>
+      <ul>
+        <li><strong>NIP:</strong> ${employee.nip}</li>
+        <li><strong>Password:</strong> ${generatedPassword}</li>
+      </ul>
+      <p>Kalau ada pertanyaan atau butuh bantuan, jangan ragu untuk menghubungi tim IT kami.</p>
+      <p>Selamat bekerja dan semoga sukses!</p>
+      <br>
+      <p>Salam,</p>
+      <p><strong>Klinik Pratama Millenium</strong></p>
+    `;
+
+    try {
+      await this.mailerService.sendMail({
+        to: employee.email,
+        subject: 'Informasi Akun MFlow Anda',
+        html,
+      });
+    } catch (error) {
+      this.logger.error(`Mailer error: ${error}`);
+    }
 
     return {
       nip: employee.nip,
