@@ -172,13 +172,13 @@ export class EmployeeService {
     const previousPage = pageNumber > 1 ? pageNumber - 1 : null;
     const nextPage = pageNumber < totalPage ? pageNumber + 1 : null;
 
-    const data = employees.map((employee) => ({
-      id: employee.id,
-      nip: employee.nip,
-      name: employee.name,
-      email: employee.email,
-      phone: employee.phone,
-      role: employee.role,
+    const data = employees.map(({ id, nip, name, email, phone, role }) => ({
+      id,
+      nip,
+      name,
+      email,
+      phone,
+      role,
     }));
 
     return {
