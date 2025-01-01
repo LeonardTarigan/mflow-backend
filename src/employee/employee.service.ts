@@ -6,9 +6,9 @@ import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { PrismaService } from 'src/common/prisma.service';
 import { ValidationService } from 'src/common/validation.service';
 import {
-  AddEmployeeClientRequest,
+  AddEmployeeDto,
+  AddEmployeeRequest,
   AddEmployeeResponse,
-  AddEmployeeServiceRequest,
 } from 'src/employee/employee.model';
 import { v4 as uuid } from 'uuid';
 import { Logger } from 'winston';
@@ -67,20 +67,18 @@ export class EmployeeService {
     return `${roleCode}${nipSuffix}${specialChar}`;
   }
 
-  async addEmployee(
-    request: AddEmployeeClientRequest,
-  ): Promise<AddEmployeeResponse> {
-    this.logger.info(`Add new employee: ${JSON.stringify(request)}`);
+  async addEmployee(dto: AddEmployeeDto): Promise<AddEmployeeResponse> {
+    this.logger.info(`Add new employee: ${JSON.stringify(dto)}`);
 
     const generatedId = uuid();
-    const generatedNip = await this.generateNip(request.role);
-    const generatedPassword = this.generatePassword(request.role, generatedNip);
+    const generatedNip = await this.generateNip(dto.role);
+    const generatedPassword = this.generatePassword(dto.role, generatedNip);
 
     const addEmployeeRequest =
-      this.validationService.validate<AddEmployeeServiceRequest>(
+      this.validationService.validate<AddEmployeeRequest>(
         EmployeeValidation.ADD,
         {
-          ...request,
+          ...dto,
           id: generatedId,
           nip: generatedNip,
           password: generatedPassword,
@@ -89,13 +87,13 @@ export class EmployeeService {
 
     const totalWithSameEmail = await this.prismaService.employee.count({
       where: {
-        email: request.email,
+        email: dto.email,
       },
     });
 
     if (totalWithSameEmail != 0) {
       throw new HttpException(
-        `Email ${request.email} sudah terdaftar!`,
+        `Email ${dto.email} sudah terdaftar!`,
         HttpStatus.BAD_REQUEST,
       );
     }

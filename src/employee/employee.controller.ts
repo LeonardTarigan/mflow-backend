@@ -1,7 +1,7 @@
 import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
 import { ApiResponse } from 'src/common/api.model';
 import {
-  AddEmployeeClientRequest,
+  AddEmployeeDto,
   AddEmployeeResponse,
 } from 'src/employee/employee.model';
 import { EmployeeService } from './employee.service';
@@ -13,9 +13,9 @@ export class EmployeeController {
   @Post()
   @HttpCode(HttpStatus.OK)
   async login(
-    @Body() request: AddEmployeeClientRequest,
+    @Body() dto: AddEmployeeDto,
   ): Promise<ApiResponse<AddEmployeeResponse>> {
-    const result = await this.employeeService.addEmployee(request);
+    const result = await this.employeeService.addEmployee(dto);
 
     return {
       data: result,

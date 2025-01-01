@@ -1,6 +1,8 @@
 import {
   CanActivate,
   ExecutionContext,
+  HttpException,
+  HttpStatus,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -30,7 +32,10 @@ export class AuthGuard implements CanActivate {
     const request = context.switchToHttp().getRequest();
     const token = this.extractTokenFromHeader(request);
     if (!token) {
-      throw new UnauthorizedException();
+      throw new HttpException(
+        'Akses ditolak. Izin untuk mengakses sumber daya ini tidak tersedia.',
+        HttpStatus.UNAUTHORIZED,
+      );
     }
     try {
       const payload = await this.jwtService.verifyAsync(token, {

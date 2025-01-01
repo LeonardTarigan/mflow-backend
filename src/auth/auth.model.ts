@@ -1,6 +1,6 @@
 import { $Enums } from '@prisma/client';
 
-export class AuthLoginRequest {
+export class AuthLoginDto {
   nip: string;
   password: string;
 }

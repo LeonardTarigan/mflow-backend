@@ -1,13 +1,13 @@
 import { EmployeeRole } from '@prisma/client';
 
-export class AddEmployeeClientRequest {
+export class AddEmployeeDto {
   name: string;
   email: string;
   phone: string;
   role: EmployeeRole;
 }
 
-export class AddEmployeeServiceRequest extends AddEmployeeClientRequest {
+export class AddEmployeeRequest extends AddEmployeeDto {
   id: string;
   nip: string;
   password: string;

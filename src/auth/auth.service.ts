@@ -2,7 +2,7 @@ import { HttpException, Inject, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as brcrypt from 'bcrypt';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
-import { AuthLoginRequest, AuthResponse } from 'src/auth/auth.model';
+import { AuthLoginDto, AuthResponse } from 'src/auth/auth.model';
 import { PrismaService } from 'src/common/prisma.service';
 import { ValidationService } from 'src/common/validation.service';
 import { Logger } from 'winston';
@@ -17,12 +17,12 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
-  async login(request: AuthLoginRequest): Promise<AuthResponse> {
-    this.logger.info(`AuthService.login(${JSON.stringify(request)})`);
+  async login(dto: AuthLoginDto): Promise<AuthResponse> {
+    this.logger.info(`AuthService.login(${JSON.stringify(dto)})`);
 
-    const loginRequest = this.validationService.validate<AuthLoginRequest>(
+    const loginRequest = this.validationService.validate<AuthLoginDto>(
       AuthValidation.LOGIN,
-      request,
+      dto,
     );
 
     let user = await this.prismaService.employee.findUnique({
