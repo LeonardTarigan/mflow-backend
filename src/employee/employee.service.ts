@@ -9,6 +9,7 @@ import {
   AddEmployeeDto,
   AddEmployeeRequest,
   AddEmployeeResponse,
+  GetAllEmployeeResponse,
 } from 'src/employee/employee.model';
 import { v4 as uuid } from 'uuid';
 import { Logger } from 'winston';
@@ -67,8 +68,8 @@ export class EmployeeService {
     return `${roleCode}${nipSuffix}${specialChar}`;
   }
 
-  async addEmployee(dto: AddEmployeeDto): Promise<AddEmployeeResponse> {
-    this.logger.info(`Add new employee: ${JSON.stringify(dto)}`);
+  async add(dto: AddEmployeeDto): Promise<AddEmployeeResponse> {
+    this.logger.info(`EmployeeService.addEmployee: ${JSON.stringify(dto)}`);
 
     const generatedId = uuid();
     const generatedNip = await this.generateNip(dto.role);
@@ -132,12 +133,63 @@ export class EmployeeService {
     }
 
     return {
+      id: employee.id,
       nip: employee.nip,
       name: employee.name,
       email: employee.email,
       phone: employee.phone,
       role: employee.role,
       token: employee.token,
+    };
+  }
+
+  async getAll(page: string): Promise<GetAllEmployeeResponse> {
+    this.logger.info(`EmployeeService.getAllEmployees - Page: ${page}`);
+
+    let pageNumber = parseInt(page) || 1;
+
+    if (pageNumber == 0)
+      throw new HttpException('Invalid page data type', HttpStatus.BAD_REQUEST);
+
+    if (pageNumber < 1) pageNumber = 1;
+
+    const pageSize = 10;
+
+    const offset = (pageNumber - 1) * pageSize;
+
+    const employees = await this.prismaService.employee.findMany({
+      skip: offset,
+      take: pageSize,
+      orderBy: {
+        role: 'desc',
+      },
+    });
+
+    const totalData = await this.prismaService.employee.count();
+
+    const totalPage = Math.ceil(totalData / pageSize);
+
+    const previousPage = pageNumber > 1 ? pageNumber - 1 : null;
+    const nextPage = pageNumber < totalPage ? pageNumber + 1 : null;
+
+    const data = employees.map((employee) => ({
+      id: employee.id,
+      nip: employee.nip,
+      name: employee.name,
+      email: employee.email,
+      phone: employee.phone,
+      role: employee.role,
+    }));
+
+    return {
+      data,
+      meta: {
+        currentPage: pageNumber,
+        previousPage,
+        nextPage,
+        totalPage,
+        totalData,
+      },
     };
   }
 }

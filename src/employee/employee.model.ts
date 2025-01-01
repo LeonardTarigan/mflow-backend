@@ -1,23 +1,31 @@
 import { EmployeeRole } from '@prisma/client';
+import { ResponseMeta } from 'src/common/api.model';
 
-export class AddEmployeeDto {
+class BaseEmployee {
   name: string;
   email: string;
   phone: string;
   role: EmployeeRole;
 }
 
-export class AddEmployeeRequest extends AddEmployeeDto {
+export class AddEmployeeDto extends BaseEmployee {}
+
+export class AddEmployeeRequest extends BaseEmployee {
   id: string;
   nip: string;
   password: string;
 }
 
-export class AddEmployeeResponse {
+export class EmployeeDetail extends BaseEmployee {
+  id: string;
   nip: string;
-  name: string;
-  email: string;
-  phone: string;
-  role: EmployeeRole;
+}
+
+export class AddEmployeeResponse extends EmployeeDetail {
   token?: string;
+}
+
+export class GetAllEmployeeResponse {
+  data: EmployeeDetail[];
+  meta: ResponseMeta;
 }
