@@ -1,6 +1,6 @@
 import { MailerService } from '@nestjs-modules/mailer';
 import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
-import { $Enums, EmployeeRole } from '@prisma/client';
+import { EmployeeRole } from '@prisma/client';
 import * as brcrypt from 'bcrypt';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { PrismaService } from 'src/common/prisma.service';
@@ -24,7 +24,7 @@ export class EmployeeService {
   ) {}
 
   async generateNip(role: EmployeeRole): Promise<string> {
-    const roleValues = Object.values($Enums.EmployeeRole);
+    const roleValues = Object.values(EmployeeRole);
 
     const roleIndex = roleValues.indexOf(role);
     if (roleIndex === -1) {
