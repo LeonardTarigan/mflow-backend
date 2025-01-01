@@ -1,4 +1,5 @@
-import { HttpException, Inject, Injectable } from '@nestjs/common';
+import { MailerService } from '@nestjs-modules/mailer';
+import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { $Enums, EmployeeRole } from '@prisma/client';
 import * as brcrypt from 'bcrypt';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
@@ -12,7 +13,6 @@ import {
 import { v4 as uuid } from 'uuid';
 import { Logger } from 'winston';
 import { EmployeeValidation } from './employee.validation';
-import { MailerService } from '@nestjs-modules/mailer';
 
 @Injectable()
 export class EmployeeService {
@@ -94,7 +94,10 @@ export class EmployeeService {
     });
 
     if (totalWithSameEmail != 0) {
-      throw new HttpException(`Email ${request.email} sudah terdaftar!`, 400);
+      throw new HttpException(
+        `Email ${request.email} sudah terdaftar!`,
+        HttpStatus.BAD_REQUEST,
+      );
     }
 
     addEmployeeRequest.password = await brcrypt.hash(

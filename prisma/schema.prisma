@@ -25,7 +25,7 @@ model Employee {
   email    String       @unique @db.VarChar(100)
   phone    String       @db.VarChar(50)
   password String       @db.VarChar(100)
-  token    String?      @db.VarChar(100)
+  token    String?      @db.VarChar(255)
 
   @@map("employees")
 }

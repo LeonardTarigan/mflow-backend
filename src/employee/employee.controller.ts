@@ -1,4 +1,4 @@
-import { Body, Controller, HttpCode, Post } from '@nestjs/common';
+import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
 import { ApiResponse } from 'src/common/api.model';
 import {
   AddEmployeeClientRequest,
@@ -10,8 +10,8 @@ import { EmployeeService } from './employee.service';
 export class EmployeeController {
   constructor(private employeeService: EmployeeService) {}
 
-  @Post('/create')
-  @HttpCode(200)
+  @Post()
+  @HttpCode(HttpStatus.OK)
   async login(
     @Body() request: AddEmployeeClientRequest,
   ): Promise<ApiResponse<AddEmployeeResponse>> {
