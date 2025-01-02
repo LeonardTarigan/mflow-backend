@@ -4,6 +4,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Param,
   Post,
   Query,
 } from '@nestjs/common';
@@ -32,15 +33,25 @@ export class EmployeeController {
     };
   }
 
+  @Get('/:id')
+  @HttpCode(HttpStatus.OK)
+  async getById(@Param('id') id: string): Promise<ApiResponse<EmployeeDetail>> {
+    const res = await this.employeeService.getById(id);
+
+    return {
+      data: res,
+    };
+  }
+
   @Post()
   @HttpCode(HttpStatus.OK)
   async add(
     @Body() dto: AddEmployeeDto,
   ): Promise<ApiResponse<AddEmployeeResponse>> {
-    const result = await this.employeeService.add(dto);
+    const res = await this.employeeService.add(dto);
 
     return {
-      data: result,
+      data: res,
     };
   }
 }

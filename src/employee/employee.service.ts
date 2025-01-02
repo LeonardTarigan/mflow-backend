@@ -9,6 +9,7 @@ import {
   AddEmployeeDto,
   AddEmployeeRequest,
   AddEmployeeResponse,
+  EmployeeDetail,
   GetAllEmployeeResponse,
 } from 'src/employee/employee.model';
 import { v4 as uuid } from 'uuid';
@@ -144,7 +145,7 @@ export class EmployeeService {
   }
 
   async getAll(page: string): Promise<GetAllEmployeeResponse> {
-    this.logger.info(`EmployeeService.getAllEmployees - Page: ${page}`);
+    this.logger.info(`EmployeeService.getAll - Page: ${page}`);
 
     let pageNumber = parseInt(page) || 1;
 
@@ -192,4 +193,33 @@ export class EmployeeService {
       },
     };
   }
+
+  async getById(id: string): Promise<EmployeeDetail> {
+    this.logger.info(`EmployeeService.getById - ${id}`);
+
+    const employeeData = await this.prismaService.employee.findUnique({
+      where: {
+        id: id,
+      },
+    });
+
+    if (!employeeData)
+      throw new HttpException(
+        'Data karyawan tidak ditemukan!',
+        HttpStatus.NOT_FOUND,
+      );
+
+    return {
+      id: employeeData.id,
+      nip: employeeData.nip,
+      name: employeeData.name,
+      email: employeeData.email,
+      phone: employeeData.phone,
+      role: employeeData.role,
+    };
+  }
+
+  async update() {}
+
+  async delete() {}
 }
