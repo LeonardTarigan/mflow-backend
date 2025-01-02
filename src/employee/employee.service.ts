@@ -71,7 +71,7 @@ export class EmployeeService {
   }
 
   async add(dto: AddEmployeeDto): Promise<AddEmployeeResponse> {
-    this.logger.info(`EmployeeService.addEmployee: ${JSON.stringify(dto)}`);
+    this.logger.info(`EmployeeService.addEmployee(${JSON.stringify(dto)})`);
 
     const generatedId = uuid();
     const generatedNip = await this.generateNip(dto.role);
@@ -146,7 +146,7 @@ export class EmployeeService {
   }
 
   async getAll(page: string): Promise<GetAllEmployeeResponse> {
-    this.logger.info(`EmployeeService.getAll - Page: ${page}`);
+    this.logger.info(`EmployeeService.getAll(page=${page})`);
 
     let pageNumber = parseInt(page) || 1;
 
@@ -163,12 +163,11 @@ export class EmployeeService {
       skip: offset,
       take: pageSize,
       orderBy: {
-        role: 'desc',
+        name: 'asc',
       },
     });
 
     const totalData = await this.prismaService.employee.count();
-
     const totalPage = Math.ceil(totalData / pageSize);
 
     const previousPage = pageNumber > 1 ? pageNumber - 1 : null;
@@ -196,7 +195,7 @@ export class EmployeeService {
   }
 
   async getById(id: string): Promise<EmployeeDetail> {
-    this.logger.info(`EmployeeService.getById - ${id}`);
+    this.logger.info(`EmployeeService.getById(${id})`);
 
     const employeeData = await this.prismaService.employee.findUnique({
       where: {
@@ -221,41 +220,61 @@ export class EmployeeService {
   }
 
   async update(id: string, dto: UpdateEmployeeDto): Promise<EmployeeDetail> {
-    this.logger.info(`EmployeeService.update: ${id} - ${JSON.stringify(dto)}`);
-
-    let employee = await this.prismaService.employee.findUnique({
-      where: {
-        id: id,
-      },
-    });
-
-    if (!employee)
-      throw new HttpException(
-        'Data karyawan tidak ditemukan!',
-        HttpStatus.NOT_FOUND,
-      );
+    this.logger.info(
+      `EmployeeService.update(id=${id}, dto=${JSON.stringify(dto)})`,
+    );
 
     const request = this.validationService.validate<UpdateEmployeeDto>(
       EmployeeValidation.UPDATE,
       dto,
     );
 
-    employee = await this.prismaService.employee.update({
-      where: {
-        id: id,
-      },
-      data: request,
-    });
+    try {
+      const employee = await this.prismaService.employee.update({
+        where: {
+          id: id,
+        },
+        data: request,
+      });
 
-    return {
-      id: employee.id,
-      nip: employee.nip,
-      name: employee.name,
-      email: employee.email,
-      phone: employee.phone,
-      role: employee.role,
-    };
+      return {
+        id: employee.id,
+        nip: employee.nip,
+        name: employee.name,
+        email: employee.email,
+        phone: employee.phone,
+        role: employee.role,
+      };
+    } catch (error) {
+      if (error.code === 'P2025') {
+        throw new HttpException(
+          'Data karyawan tidak ditemukan!',
+          HttpStatus.NOT_FOUND,
+        );
+      }
+      throw error;
+    }
   }
 
-  async delete() {}
+  async delete(id: string): Promise<string> {
+    this.logger.info(`EmployeeService.delete(${id})`);
+
+    try {
+      await this.prismaService.employee.delete({
+        where: {
+          id: id,
+        },
+      });
+    } catch (error) {
+      if (error.code === 'P2025') {
+        throw new HttpException(
+          'Data karyawan tidak ditemukan!',
+          HttpStatus.NOT_FOUND,
+        );
+      }
+      throw error;
+    }
+
+    return 'Successfully deleted';
+  }
 }

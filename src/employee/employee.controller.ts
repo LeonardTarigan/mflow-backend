@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -64,6 +65,16 @@ export class EmployeeController {
     @Body() dto: UpdateEmployeeDto,
   ): Promise<ApiResponse<EmployeeDetail>> {
     const res = await this.employeeService.update(id, dto);
+
+    return {
+      data: res,
+    };
+  }
+
+  @Delete('/:id')
+  @HttpCode(HttpStatus.OK)
+  async delete(@Param('id') id: string): Promise<ApiResponse<string>> {
+    const res = await this.employeeService.delete(id);
 
     return {
       data: res,
