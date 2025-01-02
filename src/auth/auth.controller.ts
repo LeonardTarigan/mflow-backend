@@ -18,4 +18,16 @@ export class AuthController {
       data: result,
     };
   }
+
+  @Post('/logout')
+  @HttpCode(HttpStatus.OK)
+  async logout(
+    @Body() req: { id: string },
+  ): Promise<ApiResponse<AuthResponse>> {
+    const result = await this.authService.logout(req.id);
+
+    return {
+      data: result,
+    };
+  }
 }

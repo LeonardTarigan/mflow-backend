@@ -64,4 +64,26 @@ export class AuthService {
       token: user.token,
     };
   }
+
+  async logout(id: string): Promise<AuthResponse> {
+    this.logger.info(`AuthService.logout(${id})`);
+
+    const user = await this.prismaService.employee.update({
+      where: {
+        id: id,
+      },
+      data: {
+        token: null,
+      },
+    });
+
+    return {
+      nip: user.nip,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      role: user.role,
+      token: user.token,
+    };
+  }
 }
