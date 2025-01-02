@@ -1,6 +1,6 @@
 import { MailerService } from '@nestjs-modules/mailer';
 import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
-import { EmployeeRole } from '@prisma/client';
+import { EmployeeRole, Prisma } from '@prisma/client';
 import * as brcrypt from 'bcrypt';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { PrismaService } from 'src/common/prisma.service';
@@ -145,8 +145,8 @@ export class EmployeeService {
     };
   }
 
-  async getAll(page: string): Promise<GetAllEmployeeResponse> {
-    this.logger.info(`EmployeeService.getAll(page=${page})`);
+  async getAll(page: string, search?: string): Promise<GetAllEmployeeResponse> {
+    this.logger.info(`EmployeeService.getAll(page=${page}, search=${search})`);
 
     let pageNumber = parseInt(page) || 1;
 
@@ -156,20 +156,34 @@ export class EmployeeService {
     if (pageNumber < 1) pageNumber = 1;
 
     const pageSize = 10;
-
     const offset = (pageNumber - 1) * pageSize;
 
-    const employees = await this.prismaService.employee.findMany({
-      skip: offset,
-      take: pageSize,
-      orderBy: {
-        name: 'asc',
-      },
-    });
+    const searchFilter = search
+      ? {
+          OR: [
+            { name: { contains: search, mode: Prisma.QueryMode.insensitive } },
+            { email: { contains: search, mode: Prisma.QueryMode.insensitive } },
+            { phone: { contains: search, mode: Prisma.QueryMode.insensitive } },
+            { nip: { contains: search, mode: Prisma.QueryMode.insensitive } },
+          ],
+        }
+      : undefined;
 
-    const totalData = await this.prismaService.employee.count();
+    const [employees, totalData] = await Promise.all([
+      this.prismaService.employee.findMany({
+        skip: offset,
+        take: pageSize,
+        where: searchFilter,
+        orderBy: {
+          name: 'asc',
+        },
+      }),
+      this.prismaService.employee.count({
+        where: searchFilter,
+      }),
+    ]);
+
     const totalPage = Math.ceil(totalData / pageSize);
-
     const previousPage = pageNumber > 1 ? pageNumber - 1 : null;
     const nextPage = pageNumber < totalPage ? pageNumber + 1 : null;
 

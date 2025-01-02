@@ -27,8 +27,9 @@ export class EmployeeController {
   @HttpCode(HttpStatus.OK)
   async getAll(
     @Query('page') page: string,
+    @Query('search') search: string,
   ): Promise<ApiResponse<EmployeeDetail[]>> {
-    const { data, meta } = await this.employeeService.getAll(page);
+    const { data, meta } = await this.employeeService.getAll(page, search);
 
     return {
       data,
