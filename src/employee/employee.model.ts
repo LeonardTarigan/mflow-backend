@@ -29,3 +29,10 @@ export class GetAllEmployeeResponse {
   data: EmployeeDetail[];
   meta: ResponseMeta;
 }
+
+export class UpdateEmployeeDto {
+  name?: string;
+  email?: string;
+  phone?: string;
+  role?: EmployeeRole;
+}

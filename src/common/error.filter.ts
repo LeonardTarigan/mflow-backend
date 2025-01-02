@@ -3,6 +3,7 @@ import {
   Catch,
   ExceptionFilter,
   HttpException,
+  HttpStatus,
 } from '@nestjs/common';
 import { ZodError } from 'zod';
 
@@ -16,11 +17,11 @@ export class ErrorFilter implements ExceptionFilter {
         error: exception.getResponse(),
       });
     } else if (exception instanceof ZodError) {
-      response.status(400).json({
+      response.status(HttpStatus.BAD_REQUEST).json({
         error: 'Validation error',
       });
     } else {
-      response.status(500).json({
+      response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
         error: exception.message,
       });
     }

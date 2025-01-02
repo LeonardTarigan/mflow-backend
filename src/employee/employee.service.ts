@@ -11,6 +11,7 @@ import {
   AddEmployeeResponse,
   EmployeeDetail,
   GetAllEmployeeResponse,
+  UpdateEmployeeDto,
 } from 'src/employee/employee.model';
 import { v4 as uuid } from 'uuid';
 import { Logger } from 'winston';
@@ -219,7 +220,42 @@ export class EmployeeService {
     };
   }
 
-  async update() {}
+  async update(id: string, dto: UpdateEmployeeDto): Promise<EmployeeDetail> {
+    this.logger.info(`EmployeeService.update: ${id} - ${JSON.stringify(dto)}`);
+
+    let employee = await this.prismaService.employee.findUnique({
+      where: {
+        id: id,
+      },
+    });
+
+    if (!employee)
+      throw new HttpException(
+        'Data karyawan tidak ditemukan!',
+        HttpStatus.NOT_FOUND,
+      );
+
+    const request = this.validationService.validate<UpdateEmployeeDto>(
+      EmployeeValidation.UPDATE,
+      dto,
+    );
+
+    employee = await this.prismaService.employee.update({
+      where: {
+        id: id,
+      },
+      data: request,
+    });
+
+    return {
+      id: employee.id,
+      nip: employee.nip,
+      name: employee.name,
+      email: employee.email,
+      phone: employee.phone,
+      role: employee.role,
+    };
+  }
 
   async delete() {}
 }

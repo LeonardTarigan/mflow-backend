@@ -5,6 +5,7 @@ import {
   HttpCode,
   HttpStatus,
   Param,
+  Patch,
   Post,
   Query,
 } from '@nestjs/common';
@@ -13,6 +14,7 @@ import {
   AddEmployeeDto,
   AddEmployeeResponse,
   EmployeeDetail,
+  UpdateEmployeeDto,
 } from 'src/employee/employee.model';
 import { EmployeeService } from './employee.service';
 
@@ -49,6 +51,19 @@ export class EmployeeController {
     @Body() dto: AddEmployeeDto,
   ): Promise<ApiResponse<AddEmployeeResponse>> {
     const res = await this.employeeService.add(dto);
+
+    return {
+      data: res,
+    };
+  }
+
+  @Patch('/:id')
+  @HttpCode(HttpStatus.OK)
+  async update(
+    @Param('id') id: string,
+    @Body() dto: UpdateEmployeeDto,
+  ): Promise<ApiResponse<EmployeeDetail>> {
+    const res = await this.employeeService.update(id, dto);
 
     return {
       data: res,
