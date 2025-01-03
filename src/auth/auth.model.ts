@@ -6,6 +6,7 @@ export class AuthLoginDto {
 }
 
 export class AuthData {
+  id: string;
   nip: string;
   name: string;
   email: string;

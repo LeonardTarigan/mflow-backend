@@ -57,6 +57,7 @@ export class AuthService {
 
     return {
       user: {
+        id: user.id,
         nip: user.nip,
         name: user.name,
         email: user.email,
@@ -81,6 +82,7 @@ export class AuthService {
 
     return {
       user: {
+        id: user.id,
         nip: user.nip,
         name: user.name,
         email: user.email,
