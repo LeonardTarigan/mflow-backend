@@ -5,11 +5,15 @@ export class AuthLoginDto {
   password: string;
 }
 
-export class AuthResponse {
+export class AuthData {
   nip: string;
   name: string;
   email: string;
   phone: string;
   role: $Enums.EmployeeRole;
+}
+
+export class AuthResponse {
+  user: AuthData;
   token?: string;
 }

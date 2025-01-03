@@ -56,11 +56,13 @@ export class AuthService {
     });
 
     return {
-      nip: user.nip,
-      name: user.name,
-      email: user.email,
-      phone: user.phone,
-      role: user.role,
+      user: {
+        nip: user.nip,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+      },
       token: user.token,
     };
   }
@@ -78,11 +80,13 @@ export class AuthService {
     });
 
     return {
-      nip: user.nip,
-      name: user.name,
-      email: user.email,
-      phone: user.phone,
-      role: user.role,
+      user: {
+        nip: user.nip,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+      },
       token: user.token,
     };
   }
