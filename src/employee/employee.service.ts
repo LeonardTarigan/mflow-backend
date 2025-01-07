@@ -68,7 +68,7 @@ export class EmployeeService {
   }
 
   async add(dto: AddEmployeeDto): Promise<AddEmployeeResponse> {
-    this.logger.info(`EmployeeService.addEmployee(${JSON.stringify(dto)})`);
+    this.logger.info(`EmployeeService.add(${JSON.stringify(dto)})`);
 
     const generatedId = uuid();
     const generatedNip = await this.generateNip(dto.role);

@@ -33,7 +33,7 @@ model Employee {
 model Drug {
   id          Int    @id @default(autoincrement())
   name        String @db.VarChar(100)
-  amount_sold Int    @db.Integer
+  amount_sold Int    @default(0) @db.Integer
   unit        String @db.VarChar(50)
   price       Int    @db.Integer
 
