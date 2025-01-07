@@ -123,4 +123,32 @@ export class DrugService {
       throw error;
     }
   }
+
+  async delete(id: string): Promise<string> {
+    this.logger.info(`DrugService.delete(${id})`);
+
+    const numericId = parseInt(id);
+
+    if (isNaN(numericId)) {
+      throw new HttpException('Invalid ID format', HttpStatus.BAD_REQUEST);
+    }
+
+    try {
+      await this.prismaService.drug.delete({
+        where: {
+          id: numericId,
+        },
+      });
+    } catch (error) {
+      if (error.code === 'P2025') {
+        throw new HttpException(
+          'Data obat tidak ditemukan!',
+          HttpStatus.NOT_FOUND,
+        );
+      }
+      throw error;
+    }
+
+    return `Successfully deleted: ${id}`;
+  }
 }

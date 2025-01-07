@@ -288,6 +288,6 @@ export class EmployeeService {
       throw error;
     }
 
-    return 'Successfully deleted';
+    return `Successfully deleted: ${id}`;
   }
 }

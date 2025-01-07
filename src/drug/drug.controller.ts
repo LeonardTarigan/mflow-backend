@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -51,6 +52,16 @@ export class DrugController {
     @Body() dto: UpdateDrugDto,
   ): Promise<ApiResponse<DrugDetail>> {
     const res = await this.drugService.update(id, dto);
+
+    return {
+      data: res,
+    };
+  }
+
+  @Delete('/:id')
+  @HttpCode(HttpStatus.OK)
+  async delete(@Param('id') id: string): Promise<ApiResponse<string>> {
+    const res = await this.drugService.delete(id);
 
     return {
       data: res,
