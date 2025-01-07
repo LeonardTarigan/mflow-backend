@@ -3,7 +3,13 @@ import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { PrismaService } from 'src/common/prisma.service';
 import { ValidationService } from 'src/common/validation.service';
 import { Logger } from 'winston';
-import { AddDrugDto, AddDrugResponse, GetAllDrugsResponse } from './drug.model';
+import {
+  AddDrugDto,
+  AddDrugResponse,
+  DrugDetail,
+  GetAllDrugsResponse,
+  UpdateDrugDto,
+} from './drug.model';
 import { DrugValidation } from './drug.validation';
 import { Prisma } from '@prisma/client';
 
@@ -80,5 +86,41 @@ export class DrugService {
         total_data: totalData,
       },
     };
+  }
+
+  async update(id: string, dto: UpdateDrugDto): Promise<DrugDetail> {
+    this.logger.info(
+      `DrugService.update(id=${id}, dto=${JSON.stringify(dto)})`,
+    );
+
+    const numericId = parseInt(id);
+
+    if (isNaN(numericId)) {
+      throw new HttpException('Invalid ID format', HttpStatus.BAD_REQUEST);
+    }
+
+    const request = this.validationService.validate<UpdateDrugDto>(
+      DrugValidation.UPDATE,
+      dto,
+    );
+
+    try {
+      const res = await this.prismaService.drug.update({
+        where: {
+          id: numericId,
+        },
+        data: request,
+      });
+
+      return res;
+    } catch (error) {
+      if (error.code === 'P2025') {
+        throw new HttpException(
+          'Data obat tidak ditemukan!',
+          HttpStatus.NOT_FOUND,
+        );
+      }
+      throw error;
+    }
   }
 }

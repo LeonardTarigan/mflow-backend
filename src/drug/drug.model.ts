@@ -18,3 +18,10 @@ export class GetAllDrugsResponse {
   data: DrugDetail[];
   meta: ResponseMeta;
 }
+
+export class UpdateDrugDto {
+  name?: string;
+  amount_sold?: number;
+  unit?: string;
+  price?: number;
+}
