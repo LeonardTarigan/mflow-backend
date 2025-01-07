@@ -198,11 +198,11 @@ export class EmployeeService {
     return {
       data,
       meta: {
-        currentPage: pageNumber,
-        previousPage,
-        nextPage,
-        totalPage,
-        totalData,
+        current_page: pageNumber,
+        previous_page: previousPage,
+        next_page: nextPage,
+        total_page: totalPage,
+        total_data: totalData,
       },
     };
   }
