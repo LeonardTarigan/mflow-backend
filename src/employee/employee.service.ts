@@ -38,10 +38,7 @@ export class EmployeeService {
 
     const year = new Date().getFullYear().toString().slice(-2);
 
-    const sequence =
-      (await this.prismaService.employee.count({
-        where: { role },
-      })) + 1;
+    const sequence = (await this.prismaService.employee.count()) + 1;
 
     const paddedSequence = sequence.toString().padStart(4, '0');
 
@@ -135,12 +132,14 @@ export class EmployeeService {
     }
 
     return {
-      id: employee.id,
-      nip: employee.nip,
-      name: employee.name,
-      email: employee.email,
-      phone: employee.phone,
-      role: employee.role,
+      user: {
+        id: employee.id,
+        nip: employee.nip,
+        name: employee.name,
+        email: employee.email,
+        phone: employee.phone,
+        role: employee.role,
+      },
       token: employee.token,
     };
   }

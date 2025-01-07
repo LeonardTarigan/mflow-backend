@@ -21,7 +21,8 @@ export class EmployeeDetail extends BaseEmployee {
   nip: string;
 }
 
-export class AddEmployeeResponse extends EmployeeDetail {
+export class AddEmployeeResponse {
+  user: EmployeeDetail;
   token?: string;
 }
 
