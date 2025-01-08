@@ -41,10 +41,15 @@ export class AuthService {
     if (!isPasswordValid)
       throw new HttpException('NIP atau password salah!', 401);
 
-    const accessToken = await this.jwtService.signAsync({
-      sub: user.id,
-      username: user.name,
-    });
+    const accessToken = await this.jwtService.signAsync(
+      {
+        sub: user.id,
+        username: user.name,
+      },
+      {
+        expiresIn: '7d',
+      },
+    );
 
     user = await this.prismaService.employee.update({
       where: {
