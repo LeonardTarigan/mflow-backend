@@ -144,7 +144,11 @@ export class EmployeeService {
     };
   }
 
-  async getAll(page: string, search?: string): Promise<GetAllEmployeeResponse> {
+  async getAll(
+    page: string,
+    search?: string,
+    pageSize?: number,
+  ): Promise<GetAllEmployeeResponse> {
     this.logger.info(`EmployeeService.getAll(page=${page}, search=${search})`);
 
     let pageNumber = parseInt(page) || 1;
@@ -153,9 +157,6 @@ export class EmployeeService {
       throw new HttpException('Invalid page data type', HttpStatus.BAD_REQUEST);
 
     if (pageNumber < 1) pageNumber = 1;
-
-    const pageSize = 10;
-    const offset = (pageNumber - 1) * pageSize;
 
     const searchFilter = search
       ? {
@@ -167,6 +168,35 @@ export class EmployeeService {
           ],
         }
       : undefined;
+
+    if (!pageSize) {
+      const employees = await this.prismaService.employee.findMany({
+        where: searchFilter,
+        orderBy: {
+          name: 'asc',
+        },
+      });
+
+      return {
+        data: employees.map(({ id, nip, name, email, phone, role }) => ({
+          id,
+          nip,
+          name,
+          email,
+          phone,
+          role,
+        })),
+        meta: {
+          current_page: 1,
+          previous_page: null,
+          next_page: null,
+          total_page: 1,
+          total_data: employees.length,
+        },
+      };
+    }
+
+    const offset = (pageNumber - 1) * pageSize;
 
     const [employees, totalData] = await Promise.all([
       this.prismaService.employee.findMany({
@@ -186,17 +216,15 @@ export class EmployeeService {
     const previousPage = pageNumber > 1 ? pageNumber - 1 : null;
     const nextPage = pageNumber < totalPage ? pageNumber + 1 : null;
 
-    const data = employees.map(({ id, nip, name, email, phone, role }) => ({
-      id,
-      nip,
-      name,
-      email,
-      phone,
-      role,
-    }));
-
     return {
-      data,
+      data: employees.map(({ id, nip, name, email, phone, role }) => ({
+        id,
+        nip,
+        name,
+        email,
+        phone,
+        role,
+      })),
       meta: {
         current_page: pageNumber,
         previous_page: previousPage,

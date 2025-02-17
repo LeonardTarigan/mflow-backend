@@ -28,8 +28,15 @@ export class EmployeeController {
   async getAll(
     @Query('page') page: string,
     @Query('search') search: string,
+    @Query('pageSize') pageSize: string,
   ): Promise<ApiResponse<EmployeeDetail[]>> {
-    const { data, meta } = await this.employeeService.getAll(page, search);
+    const parsedPageSize = pageSize ? parseInt(pageSize, 10) : undefined;
+
+    const { data, meta } = await this.employeeService.getAll(
+      page,
+      search,
+      parsedPageSize,
+    );
 
     return {
       data,

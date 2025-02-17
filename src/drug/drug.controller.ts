@@ -36,8 +36,15 @@ export class DrugController {
   async getAll(
     @Query('page') page: string,
     @Query('search') search: string,
+    @Query('pageSize') pageSize: string,
   ): Promise<ApiResponse<DrugDetail[]>> {
-    const { data, meta } = await this.drugService.getAll(page, search);
+    const parsedPageSize = pageSize ? parseInt(pageSize, 10) : undefined;
+
+    const { data, meta } = await this.drugService.getAll(
+      page,
+      search,
+      parsedPageSize,
+    );
 
     return {
       data,

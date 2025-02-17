@@ -36,7 +36,11 @@ export class DrugService {
     return res;
   }
 
-  async getAll(page: string, search?: string): Promise<GetAllDrugsResponse> {
+  async getAll(
+    page: string,
+    search?: string,
+    pageSize?: number,
+  ): Promise<GetAllDrugsResponse> {
     this.logger.info(`DrugService.getAll(page=${page}, search=${search})`);
 
     let pageNumber = parseInt(page) || 1;
@@ -46,9 +50,6 @@ export class DrugService {
 
     if (pageNumber < 1) pageNumber = 1;
 
-    const pageSize = 10;
-    const offset = (pageNumber - 1) * pageSize;
-
     const searchFilter = search
       ? {
           OR: [
@@ -57,6 +58,28 @@ export class DrugService {
           ],
         }
       : undefined;
+
+    if (!pageSize) {
+      const drugs = await this.prismaService.drug.findMany({
+        where: searchFilter,
+        orderBy: {
+          name: 'asc',
+        },
+      });
+
+      return {
+        data: drugs,
+        meta: {
+          current_page: 1,
+          previous_page: null,
+          next_page: null,
+          total_page: 1,
+          total_data: drugs.length,
+        },
+      };
+    }
+
+    const offset = (pageNumber - 1) * pageSize;
 
     const [drugs, totalData] = await Promise.all([
       this.prismaService.drug.findMany({
