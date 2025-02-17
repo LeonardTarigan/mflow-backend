@@ -89,7 +89,7 @@ export class RoomService {
           name: 'asc',
         },
       }),
-      this.prismaService.drug.count({
+      this.prismaService.room.count({
         where: searchFilter,
       }),
     ]);
