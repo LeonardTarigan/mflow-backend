@@ -39,3 +39,10 @@ model Drug {
 
   @@map("drugs")
 }
+
+model Room {
+  id   Int    @id @default(autoincrement())
+  name String @db.VarChar(100)
+
+  @@map("rooms")
+}

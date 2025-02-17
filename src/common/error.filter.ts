@@ -18,7 +18,7 @@ export class ErrorFilter implements ExceptionFilter {
       });
     } else if (exception instanceof ZodError) {
       response.status(HttpStatus.BAD_REQUEST).json({
-        error: 'Validation error',
+        error: exception.errors,
       });
     } else {
       response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
