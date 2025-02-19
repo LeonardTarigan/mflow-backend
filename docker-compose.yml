@@ -1,0 +1,13 @@
+version: '1.0'
+
+services:
+  rest-api:
+    container_name: rest-api
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - '8080:8080'
+    env_file:
+      - .env
+    restart: unless-stopped
