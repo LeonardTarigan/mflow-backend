@@ -14,6 +14,7 @@ import { ValidationService } from './validation.service';
     WinstonModule.forRoot({
       format: winston.format.json(),
       transports: [new winston.transports.Console()],
+      silent: process.env.NODE_ENV === 'test',
     }),
     ConfigModule.forRoot({
       isGlobal: true,

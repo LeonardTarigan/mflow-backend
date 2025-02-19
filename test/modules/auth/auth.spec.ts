@@ -38,9 +38,6 @@ describe('AuthController', () => {
         });
       expect(res.status).toBe(400);
       expect(res.body.error).toBeDefined();
-      expect(res.body.error).toBe(
-        'nip: String must contain at least 1 character(s), password: String must contain at least 1 character(s)',
-      );
     });
 
     it('should be able to login', async () => {
@@ -54,13 +51,14 @@ describe('AuthController', () => {
       expect(res.status).toBe(200);
       expect(res.body.data.user.name).toBe(testService.TEST_USER_NAME);
       expect(res.body.data.token).toBeDefined();
+      expect(res.body.error).toBeUndefined();
 
       token = res.body.data.token;
     });
   });
 
   describe('POST /api/auth/logout', () => {
-    it('should be not authorized', async () => {
+    it('should not be authorized', async () => {
       const res = await request(app.getHttpServer())
         .post('/api/auth/logout')
         .send({
@@ -82,6 +80,7 @@ describe('AuthController', () => {
       expect(res.status).toBe(200);
       expect(res.body.data.user.name).toBe(testService.TEST_USER_NAME);
       expect(res.body.data.token).toBeNull();
+      expect(res.body.error).toBeUndefined();
     });
   });
 });

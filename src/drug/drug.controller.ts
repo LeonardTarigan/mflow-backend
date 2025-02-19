@@ -24,7 +24,7 @@ export class DrugController {
   constructor(private drugService: DrugService) {}
 
   @Post()
-  @HttpCode(HttpStatus.OK)
+  @HttpCode(HttpStatus.CREATED)
   async add(@Body() dto: AddDrugDto): Promise<ApiResponse<AddDrugResponse>> {
     const res = await this.drugService.add(dto);
 
