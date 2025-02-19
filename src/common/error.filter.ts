@@ -17,8 +17,12 @@ export class ErrorFilter implements ExceptionFilter {
         error: exception.getResponse(),
       });
     } else if (exception instanceof ZodError) {
+      const error = exception.errors
+        .map((err) => `${err.path.join('.')}: ${err.message}`)
+        .join(', ');
+
       response.status(HttpStatus.BAD_REQUEST).json({
-        error: exception.errors,
+        error,
       });
     } else {
       response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
