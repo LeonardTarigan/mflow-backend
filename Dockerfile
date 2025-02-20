@@ -5,12 +5,15 @@ RUN npm install -g pnpm
 
 WORKDIR /app
 
-# Copy files
+# Copy package files
 COPY package.json pnpm-lock.yaml* ./
-COPY prisma ./prisma/
 
-# Install dependencies
+# Install dependencies (including bcrypt)
 RUN pnpm install --frozen-lockfile
+
+# Rebuild bcrypt for Alpine Linux
+RUN pnpm rebuild bcrypt
+
 RUN npx prisma generate
 
 # Copy application code
@@ -22,14 +25,13 @@ RUN pnpm build
 # Stage 2: Production
 FROM node:20-alpine
 
-# Install pnpm globally in the final stage
 RUN npm install -g pnpm
 
 WORKDIR /app
 
-# Copy only necessary files from the builder stage
-COPY --from=builder /app/node_modules ./node_modules
+# Copy built files
 COPY --from=builder /app/package.json ./
+COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
 
