@@ -1,6 +1,6 @@
 import { HttpException, Inject, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import bcrypt from 'bcryptjs';
+import * as bcrypt from 'bcryptjs';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { AuthLoginDto, AuthResponse } from 'src/auth/auth.model';
 import { PrismaService } from 'src/common/prisma.service';
@@ -33,10 +33,12 @@ export class AuthService {
 
     if (!user) throw new HttpException('NIP atau password salah!', 401);
 
-    const isPasswordValid = await bcrypt.compare(
+    const isPasswordValid = await bcrypt?.compare(
       loginRequest.password,
       user.password,
     );
+
+    console.log(isPasswordValid);
 
     if (!isPasswordValid)
       throw new HttpException('NIP atau password salah!', 401);
