@@ -1,4 +1,6 @@
-FROM node:20-alpine
+# Stage 1: Build
+FROM node:20-alpine AS builder
+
 RUN npm install -g pnpm
 
 WORKDIR /app
@@ -16,6 +18,20 @@ COPY . .
 
 # Build the application
 RUN pnpm build
+
+# Stage 2: Production
+FROM node:20-alpine
+
+# Install pnpm globally in the final stage
+RUN npm install -g pnpm
+
+WORKDIR /app
+
+# Copy only necessary files from the builder stage
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package.json ./
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/prisma ./prisma
 
 # Set environment to production
 ENV NODE_ENV=production
