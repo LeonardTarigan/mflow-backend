@@ -12,7 +12,30 @@ import { ValidationService } from './validation.service';
 @Module({
   imports: [
     WinstonModule.forRoot({
-      format: winston.format.json(),
+      format: winston.format.combine(
+        winston.format.timestamp({ format: 'MM/DD/YYYY, hh:mm:ss A' }),
+        winston.format.printf(({ level, message, timestamp }) => {
+          if (typeof message === 'object') {
+            const { ...rest } = message;
+            message =
+              Object.keys(rest).length > 2
+                ? `\n${JSON.stringify(rest, null, 2)}`
+                : JSON.stringify(rest);
+          }
+          const color = {
+            info: '\x1b[32m', // Green
+            error: '\x1b[31m', // Red
+            warn: '\x1b[33m', // Yellow
+            debug: '\x1b[34m', // Blue
+            reset: '\x1b[0m',
+            cyan: '\x1b[36m',
+          };
+
+          const levelColor = color[level] || '\x1b[37m';
+
+          return `${color.cyan}${timestamp}${color.reset} ${levelColor}[${level.toUpperCase()}]${color.reset}: ${message}`;
+        }),
+      ),
       transports: [new winston.transports.Console()],
       silent: process.env.NODE_ENV === 'test',
     }),

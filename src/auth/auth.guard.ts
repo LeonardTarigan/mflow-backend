@@ -4,7 +4,6 @@ import {
   HttpException,
   HttpStatus,
   Injectable,
-  UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Reflector } from '@nestjs/core';
@@ -43,7 +42,10 @@ export class AuthGuard implements CanActivate {
       });
       request['user'] = payload;
     } catch {
-      throw new UnauthorizedException();
+      throw new HttpException(
+        'Akses ditolak. Izin untuk mengakses sumber daya ini tidak tersedia.',
+        HttpStatus.UNAUTHORIZED,
+      );
     }
     return true;
   }

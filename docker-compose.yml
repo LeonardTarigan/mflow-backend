@@ -1,5 +1,3 @@
-version: '1.0'
-
 services:
   rest-api:
     container_name: rest-api

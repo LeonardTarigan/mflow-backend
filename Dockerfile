@@ -8,7 +8,7 @@ COPY package.json pnpm-lock.yaml* ./
 COPY prisma ./prisma/
 
 # Install dependencies
-RUN pnpm install
+RUN pnpm install --frozen-lockfile
 RUN npx prisma generate
 
 # Copy application code
