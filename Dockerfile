@@ -14,7 +14,11 @@ RUN pnpm install --frozen-lockfile
 # Rebuild bcrypt for Alpine Linux
 RUN pnpm rebuild bcrypt
 
-RUN npx prisma generate
+# Copy prisma directory
+COPY prisma ./prisma
+
+# Generate Prisma client
+RUN pnpx prisma generate
 
 # Copy application code
 COPY . .
