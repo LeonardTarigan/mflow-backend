@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
+import bcrypt from 'bcryptjs';
 import { PrismaService } from 'src/common/prisma.service';
-import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class AuthTestService {

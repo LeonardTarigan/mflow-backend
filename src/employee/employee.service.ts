@@ -1,7 +1,7 @@
 import { MailerService } from '@nestjs-modules/mailer';
 import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { EmployeeRole, Prisma } from '@prisma/client';
-import * as brcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { PrismaService } from 'src/common/prisma.service';
 import { ValidationService } from 'src/common/validation.service';
@@ -98,7 +98,7 @@ export class EmployeeService {
       );
     }
 
-    addEmployeeRequest.password = await brcrypt.hash(
+    addEmployeeRequest.password = await bcrypt.hash(
       addEmployeeRequest.password,
       10,
     );
