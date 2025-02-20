@@ -20,7 +20,7 @@ export class RoomController {
   constructor(private roomService: RoomService) {}
 
   @Post()
-  @HttpCode(HttpStatus.OK)
+  @HttpCode(HttpStatus.CREATED)
   async add(@Body() dto: AddRoomDto): Promise<ApiResponse<AddRoomResponse>> {
     const res = await this.roomService.add(dto);
 

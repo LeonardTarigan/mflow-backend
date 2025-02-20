@@ -3,17 +3,17 @@ import { Test, TestingModule } from '@nestjs/testing';
 import * as request from 'supertest';
 import { TestModule } from 'test/test.module';
 import { AppModule } from '../../../src/app.module';
-import { DrugTestService } from './drug.spec.service';
 import { JwtService } from '@nestjs/jwt';
+import { RoomTestService } from './room.spec.service';
 
-describe('DrugController', () => {
+describe('RoomController', () => {
   let app: INestApplication;
-  let testService: DrugTestService;
+  let testService: RoomTestService;
   let jwtService: JwtService;
   let token: string;
-  let testDrugId: number;
+  let testRecordId: number;
 
-  const path = '/api/drugs';
+  const path = '/api/rooms';
 
   beforeEach(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -23,25 +23,23 @@ describe('DrugController', () => {
     app = moduleFixture.createNestApplication();
     await app.init();
 
-    testService = app.get(DrugTestService);
+    testService = app.get(RoomTestService);
     jwtService = app.get(JwtService);
 
     token = jwtService.sign({
-      sub: testService.TEST_DRUG_UNIT,
-      name: testService.TEST_DRUG_NAME,
+      sub: 'testing_sub',
+      name: 'testing_name',
     });
   });
 
   afterAll(async () => {
-    await testService.deleteDrug();
+    await testService.deleteRoom();
   });
 
   describe(`POST ${path}`, () => {
     it('should not be authorized', async () => {
       const res = await request(app.getHttpServer()).post(path).send({
-        name: testService.TEST_DRUG_NAME,
-        unit: testService.TEST_DRUG_UNIT,
-        price: testService.TEST_DRUG_PRICE,
+        name: testService.TEST_ROOM_NAME,
       });
 
       expect(res.status).toBe(401);
@@ -54,8 +52,6 @@ describe('DrugController', () => {
         .set('Authorization', `Bearer ${token}`)
         .send({
           name: '',
-          unit: -1,
-          price: -1,
         });
 
       expect(res.status).toBe(400);
@@ -67,16 +63,14 @@ describe('DrugController', () => {
         .post(path)
         .set('Authorization', `Bearer ${token}`)
         .send({
-          name: testService.TEST_DRUG_NAME,
-          unit: testService.TEST_DRUG_UNIT,
-          price: testService.TEST_DRUG_PRICE,
+          name: testService.TEST_ROOM_NAME,
         });
 
       expect(res.status).toBe(201);
-      expect(res.body.data.name).toBe(testService.TEST_DRUG_NAME);
+      expect(res.body.data.name).toBe(testService.TEST_ROOM_NAME);
       expect(res.body.error).toBeUndefined();
 
-      testDrugId = res.body.data.id;
+      testRecordId = res.body.data.id;
     });
   });
 
@@ -88,7 +82,7 @@ describe('DrugController', () => {
       expect(res.body.error).toBeDefined();
     });
 
-    it('should be able to get all drugs data', async () => {
+    it('should be able to get all rooms data', async () => {
       const res = await request(app.getHttpServer())
         .get(path)
         .set('Authorization', `Bearer ${token}`);
@@ -103,12 +97,9 @@ describe('DrugController', () => {
   describe(`PATCH ${path}`, () => {
     it('should not be authorized', async () => {
       const res = await request(app.getHttpServer())
-        .patch(`${path}/${testDrugId}`)
+        .patch(`${path}/${testRecordId}`)
         .send({
-          name: testService.TEST_DRUG_NAME,
-          unit: testService.TEST_DRUG_UNIT,
-          price: testService.TEST_DRUG_PRICE,
-          amount_sold: testService.TEST_DRUG_AMOUNT_SOLD,
+          name: testService.TEST_ROOM_NAME,
         });
 
       expect(res.status).toBe(401);
@@ -120,10 +111,7 @@ describe('DrugController', () => {
         .patch(`${path}/0`)
         .set('Authorization', `Bearer ${token}`)
         .send({
-          name: testService.TEST_DRUG_NAME,
-          unit: testService.TEST_DRUG_UNIT,
-          price: testService.TEST_DRUG_PRICE,
-          amount_sold: testService.TEST_DRUG_AMOUNT_SOLD,
+          name: testService.TEST_ROOM_NAME,
         });
 
       expect(res.status).toBe(404);
@@ -132,40 +120,28 @@ describe('DrugController', () => {
 
     it('should be rejected as validation error', async () => {
       const res = await request(app.getHttpServer())
-        .patch(`${path}/${testDrugId}`)
+        .patch(`${path}/${testRecordId}`)
         .set('Authorization', `Bearer ${token}`)
         .send({
           name: '',
-          unit: -1,
-          price: -1,
-          amount_sold: -1,
         });
 
       expect(res.status).toBe(400);
       expect(res.body.error).toBeDefined();
     });
 
-    it('should update name, unit, price, and amount sold', async () => {
-      const NEW_DRUG_NAME = 'updated_name';
-      const NEW_DRUG_UNIT = 'updated_unit';
-      const NEW_DRUG_PRICE = 20_000;
-      const NEW_DRUG_AMOUNT_SOLD = 320;
+    it('should update name', async () => {
+      const NEW_ROOM_NAME = 'updated_name';
 
       const res = await request(app.getHttpServer())
-        .patch(`${path}/${testDrugId}`)
+        .patch(`${path}/${testRecordId}`)
         .set('Authorization', `Bearer ${token}`)
         .send({
-          name: NEW_DRUG_NAME,
-          unit: NEW_DRUG_UNIT,
-          price: NEW_DRUG_PRICE,
-          amount_sold: NEW_DRUG_AMOUNT_SOLD,
+          name: NEW_ROOM_NAME,
         });
 
       expect(res.status).toBe(200);
-      expect(res.body.data.name).toBe(NEW_DRUG_NAME);
-      expect(res.body.data.unit).toBe(NEW_DRUG_UNIT);
-      expect(res.body.data.price).toBe(NEW_DRUG_PRICE);
-      expect(res.body.data.amount_sold).toBe(NEW_DRUG_AMOUNT_SOLD);
+      expect(res.body.data.name).toBe(NEW_ROOM_NAME);
       expect(res.body.error).toBeUndefined();
     });
   });
@@ -173,7 +149,7 @@ describe('DrugController', () => {
   describe(`DELETE ${path}`, () => {
     it('should not be authorized', async () => {
       const res = await request(app.getHttpServer()).delete(
-        `${path}/${testDrugId}`,
+        `${path}/${testRecordId}`,
       );
 
       expect(res.status).toBe(401);
@@ -200,11 +176,11 @@ describe('DrugController', () => {
 
     it('should delete the test record', async () => {
       const res = await request(app.getHttpServer())
-        .delete(`${path}/${testDrugId}`)
+        .delete(`${path}/${testRecordId}`)
         .set('Authorization', `Bearer ${token}`);
 
       expect(res.status).toBe(200);
-      expect(res.body.data).toBe('Successfully deleted: ' + testDrugId);
+      expect(res.body.data).toBe('Successfully deleted: ' + testRecordId);
       expect(res.body.error).toBeUndefined();
     });
   });
