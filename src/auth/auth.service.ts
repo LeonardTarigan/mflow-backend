@@ -38,8 +38,6 @@ export class AuthService {
       user.password,
     );
 
-    console.log(isPasswordValid);
-
     if (!isPasswordValid)
       throw new HttpException('NIP atau password salah!', 401);
 
