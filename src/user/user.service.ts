@@ -37,7 +37,7 @@ export class UserService {
     const roleCode = roleMap[role.toUpperCase()] || 'USR';
 
     const namePart = name.slice(0, 4).toLowerCase();
-    const randomNum = Math.floor(100 + Math.random() * 900);
+    const randomNum = Math.floor(10000 + Math.random() * 90000);
 
     return `${namePart}.${roleCode}#${randomNum}`;
   }
@@ -45,14 +45,13 @@ export class UserService {
   async add(dto: AddUserDto): Promise<AddUserResponse> {
     this.logger.info(`UserService.add(${JSON.stringify(dto)})`);
 
-    const generatedId = uuid();
     const generatedPassword = this.generatePassword(dto.username, dto.role);
 
     const addEmployeeRequest = this.validationService.validate<AddUserRequest>(
       UserValidation.ADD,
       {
         ...dto,
-        id: generatedId,
+        id: uuid(),
         password: generatedPassword,
       },
     );
@@ -79,24 +78,15 @@ export class UserService {
       data: addEmployeeRequest,
     });
 
-    const html = `
-      <p>Halo <strong>${employee.username}</strong>,</p>
-      <p>Selamat bergabung di tim kami! Berikut adalah detail akun Anda:</p>
-      <ul>
-        <li><strong>Password:</strong> ${generatedPassword}</li>
-      </ul>
-      <p>Kalau ada pertanyaan atau butuh bantuan, jangan ragu untuk menghubungi tim IT kami.</p>
-      <p>Selamat bekerja dan semoga sukses!</p>
-      <br>
-      <p>Salam,</p>
-      <p><strong>Klinik Pratama Millenium</strong></p>
-    `;
-
     try {
       await this.mailerService.sendMail({
         to: employee.email,
         subject: 'Informasi Akun MFlow Anda',
-        html,
+        template: 'user-welcome',
+        context: {
+          username: employee.username,
+          password: generatedPassword,
+        },
       });
     } catch (error) {
       this.logger.error(`Mailer error: ${error}`);

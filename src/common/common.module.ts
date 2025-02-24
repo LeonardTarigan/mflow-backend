@@ -1,8 +1,10 @@
 import { MailerModule } from '@nestjs-modules/mailer';
+import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
 import { Global, Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_FILTER } from '@nestjs/core';
 import { WinstonModule } from 'nest-winston';
+import { join } from 'path';
 import * as winston from 'winston';
 import { ErrorFilter } from './error.filter';
 import { PrismaService } from './prisma.service';
@@ -23,10 +25,10 @@ import { ValidationService } from './validation.service';
                 : JSON.stringify(rest);
           }
           const color = {
-            info: '\x1b[32m', // Green
-            error: '\x1b[31m', // Red
-            warn: '\x1b[33m', // Yellow
-            debug: '\x1b[34m', // Blue
+            info: '\x1b[32m',
+            error: '\x1b[31m',
+            warn: '\x1b[33m',
+            debug: '\x1b[34m',
             reset: '\x1b[0m',
             cyan: '\x1b[36m',
           };
@@ -57,6 +59,13 @@ import { ValidationService } from './validation.service';
         },
         defaults: {
           from: `${configService.get<string>('APP_NAME')} <${configService.get<string>('MAIL_FROM')}>`,
+        },
+        template: {
+          dir: join(__dirname, '..', 'mail', 'templates'),
+          adapter: new HandlebarsAdapter(),
+          options: {
+            strict: true,
+          },
         },
       }),
     }),
