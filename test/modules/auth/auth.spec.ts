@@ -44,12 +44,12 @@ describe('AuthController', () => {
       const res = await request(app.getHttpServer())
         .post('/api/auth/login')
         .send({
-          nip: testService.TEST_USER_NIP,
+          email: testService.TEST_USER_EMAIL,
           password: testService.TEST_USER_PASSWORD,
         });
 
       expect(res.status).toBe(200);
-      expect(res.body.data.user.name).toBe(testService.TEST_USER_NAME);
+      expect(res.body.data.user.email).toBe(testService.TEST_USER_EMAIL);
       expect(res.body.data.token).toBeDefined();
       expect(res.body.error).toBeUndefined();
 
@@ -78,7 +78,7 @@ describe('AuthController', () => {
         });
 
       expect(res.status).toBe(200);
-      expect(res.body.data.user.name).toBe(testService.TEST_USER_NAME);
+      expect(res.body.data.user.email).toBe(testService.TEST_USER_EMAIL);
       expect(res.body.data.token).toBeNull();
       expect(res.body.error).toBeUndefined();
     });

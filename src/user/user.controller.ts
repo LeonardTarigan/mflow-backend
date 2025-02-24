@@ -12,16 +12,16 @@ import {
 } from '@nestjs/common';
 import { ApiResponse } from 'src/common/api.model';
 import {
-  AddEmployeeDto,
-  AddEmployeeResponse,
-  EmployeeDetail,
-  UpdateEmployeeDto,
-} from 'src/employee/employee.model';
-import { EmployeeService } from './employee.service';
+  AddUserDto,
+  AddUserResponse,
+  UpdateUserDto,
+  UserDetail,
+} from './user.model';
+import { UserService } from './user.service';
 
-@Controller('/api/employees')
-export class EmployeeController {
-  constructor(private employeeService: EmployeeService) {}
+@Controller('/api/users')
+export class UserController {
+  constructor(private service: UserService) {}
 
   @Get()
   @HttpCode(HttpStatus.OK)
@@ -29,10 +29,10 @@ export class EmployeeController {
     @Query('page') page: string,
     @Query('search') search: string,
     @Query('pageSize') pageSize: string,
-  ): Promise<ApiResponse<EmployeeDetail[]>> {
+  ): Promise<ApiResponse<UserDetail[]>> {
     const parsedPageSize = pageSize ? parseInt(pageSize, 10) : undefined;
 
-    const { data, meta } = await this.employeeService.getAll(
+    const { data, meta } = await this.service.getAll(
       page,
       search,
       parsedPageSize,
@@ -46,8 +46,8 @@ export class EmployeeController {
 
   @Get('/:id')
   @HttpCode(HttpStatus.OK)
-  async getById(@Param('id') id: string): Promise<ApiResponse<EmployeeDetail>> {
-    const res = await this.employeeService.getById(id);
+  async getById(@Param('id') id: string): Promise<ApiResponse<UserDetail>> {
+    const res = await this.service.getById(id);
 
     return {
       data: res,
@@ -56,10 +56,8 @@ export class EmployeeController {
 
   @Post()
   @HttpCode(HttpStatus.OK)
-  async add(
-    @Body() dto: AddEmployeeDto,
-  ): Promise<ApiResponse<AddEmployeeResponse>> {
-    const res = await this.employeeService.add(dto);
+  async add(@Body() dto: AddUserDto): Promise<ApiResponse<AddUserResponse>> {
+    const res = await this.service.add(dto);
 
     return {
       data: res,
@@ -70,9 +68,9 @@ export class EmployeeController {
   @HttpCode(HttpStatus.OK)
   async update(
     @Param('id') id: string,
-    @Body() dto: UpdateEmployeeDto,
-  ): Promise<ApiResponse<EmployeeDetail>> {
-    const res = await this.employeeService.update(id, dto);
+    @Body() dto: UpdateUserDto,
+  ): Promise<ApiResponse<UserDetail>> {
+    const res = await this.service.update(id, dto);
 
     return {
       data: res,
@@ -82,7 +80,7 @@ export class EmployeeController {
   @Delete('/:id')
   @HttpCode(HttpStatus.OK)
   async delete(@Param('id') id: string): Promise<ApiResponse<string>> {
-    const res = await this.employeeService.delete(id);
+    const res = await this.service.delete(id);
 
     return {
       data: res,

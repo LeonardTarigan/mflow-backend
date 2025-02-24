@@ -1,17 +1,15 @@
-import { $Enums } from '@prisma/client';
+import { UserRole } from '@prisma/client';
 
 export class AuthLoginDto {
-  nip: string;
+  email: string;
   password: string;
 }
 
 export class AuthData {
   id: string;
-  nip: string;
-  name: string;
+  username: string;
   email: string;
-  phone: string;
-  role: $Enums.EmployeeRole;
+  role: UserRole;
 }
 
 export class AuthResponse {

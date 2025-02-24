@@ -25,9 +25,9 @@ export class AuthService {
       dto,
     );
 
-    let user = await this.prismaService.employee.findUnique({
+    let user = await this.prismaService.user.findUnique({
       where: {
-        nip: loginRequest.nip,
+        email: loginRequest.email,
       },
     });
 
@@ -44,16 +44,16 @@ export class AuthService {
     const accessToken = await this.jwtService.signAsync(
       {
         sub: user.id,
-        username: user.name,
+        username: user.username,
       },
       {
         expiresIn: '7d',
       },
     );
 
-    user = await this.prismaService.employee.update({
+    user = await this.prismaService.user.update({
       where: {
-        nip: loginRequest.nip,
+        email: loginRequest.email,
       },
       data: {
         token: accessToken,
@@ -63,10 +63,8 @@ export class AuthService {
     return {
       user: {
         id: user.id,
-        nip: user.nip,
-        name: user.name,
+        username: user.username,
         email: user.email,
-        phone: user.phone,
         role: user.role,
       },
       token: user.token,
@@ -76,7 +74,7 @@ export class AuthService {
   async logout(id: string): Promise<AuthResponse> {
     this.logger.info(`AuthService.logout(${id})`);
 
-    const user = await this.prismaService.employee.update({
+    const user = await this.prismaService.user.update({
       where: {
         id: id,
       },
@@ -88,10 +86,8 @@ export class AuthService {
     return {
       user: {
         id: user.id,
-        nip: user.nip,
-        name: user.name,
+        username: user.username,
         email: user.email,
-        phone: user.phone,
         role: user.role,
       },
       token: user.token,

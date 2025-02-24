@@ -1,24 +1,24 @@
 import { MailerService } from '@nestjs-modules/mailer';
 import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
-import { EmployeeRole, Prisma } from '@prisma/client';
+import { Prisma, UserRole } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { PrismaService } from 'src/common/prisma.service';
 import { ValidationService } from 'src/common/validation.service';
-import {
-  AddEmployeeDto,
-  AddEmployeeRequest,
-  AddEmployeeResponse,
-  EmployeeDetail,
-  GetAllEmployeeResponse,
-  UpdateEmployeeDto,
-} from 'src/employee/employee.model';
 import { v4 as uuid } from 'uuid';
 import { Logger } from 'winston';
-import { EmployeeValidation } from './employee.validation';
+import {
+  AddUserDto,
+  AddUserRequest,
+  AddUserResponse,
+  GetAllUserResponse,
+  UpdateUserDto,
+  UserDetail,
+} from './user.model';
+import { UserValidation } from './user.validation';
 
 @Injectable()
-export class EmployeeService {
+export class UserService {
   constructor(
     private validationService: ValidationService,
     @Inject(WINSTON_MODULE_PROVIDER) private logger: Logger,
@@ -26,8 +26,8 @@ export class EmployeeService {
     private readonly mailerService: MailerService,
   ) {}
 
-  async generateNip(role: EmployeeRole): Promise<string> {
-    const roleValues = Object.values(EmployeeRole);
+  async generateNip(role: UserRole): Promise<string> {
+    const roleValues = Object.values(UserRole);
 
     const roleIndex = roleValues.indexOf(role);
     if (roleIndex === -1) {
@@ -38,14 +38,14 @@ export class EmployeeService {
 
     const year = new Date().getFullYear().toString().slice(-2);
 
-    const sequence = (await this.prismaService.employee.count()) + 1;
+    const sequence = (await this.prismaService.user.count()) + 1;
 
     const paddedSequence = sequence.toString().padStart(4, '0');
 
     return `${year}${roleCode}${paddedSequence}`;
   }
 
-  generatePassword(role: EmployeeRole, nip: string): string {
+  generatePassword(role: UserRole, nip: string): string {
     const roleMap = {
       ADMIN: 'ADM',
       DOKTER: 'DKT',
@@ -67,25 +67,23 @@ export class EmployeeService {
     return `${roleCode}${nipSuffix}${specialChar}`;
   }
 
-  async add(dto: AddEmployeeDto): Promise<AddEmployeeResponse> {
-    this.logger.info(`EmployeeService.add(${JSON.stringify(dto)})`);
+  async add(dto: AddUserDto): Promise<AddUserResponse> {
+    this.logger.info(`UserService.add(${JSON.stringify(dto)})`);
 
     const generatedId = uuid();
     const generatedNip = await this.generateNip(dto.role);
     const generatedPassword = this.generatePassword(dto.role, generatedNip);
 
-    const addEmployeeRequest =
-      this.validationService.validate<AddEmployeeRequest>(
-        EmployeeValidation.ADD,
-        {
-          ...dto,
-          id: generatedId,
-          nip: generatedNip,
-          password: generatedPassword,
-        },
-      );
+    const addEmployeeRequest = this.validationService.validate<AddUserRequest>(
+      UserValidation.ADD,
+      {
+        ...dto,
+        id: generatedId,
+        password: generatedPassword,
+      },
+    );
 
-    const totalWithSameEmail = await this.prismaService.employee.count({
+    const totalWithSameEmail = await this.prismaService.user.count({
       where: {
         email: dto.email,
       },
@@ -103,15 +101,14 @@ export class EmployeeService {
       10,
     );
 
-    const employee = await this.prismaService.employee.create({
+    const employee = await this.prismaService.user.create({
       data: addEmployeeRequest,
     });
 
     const html = `
-      <p>Halo <strong>${employee.name}</strong>,</p>
+      <p>Halo <strong>${employee.username}</strong>,</p>
       <p>Selamat bergabung di tim kami! Berikut adalah detail akun Anda:</p>
       <ul>
-        <li><strong>NIP:</strong> ${employee.nip}</li>
         <li><strong>Password:</strong> ${generatedPassword}</li>
       </ul>
       <p>Kalau ada pertanyaan atau butuh bantuan, jangan ragu untuk menghubungi tim IT kami.</p>
@@ -134,10 +131,8 @@ export class EmployeeService {
     return {
       user: {
         id: employee.id,
-        nip: employee.nip,
-        name: employee.name,
+        username: employee.username,
         email: employee.email,
-        phone: employee.phone,
         role: employee.role,
       },
       token: employee.token,
@@ -148,8 +143,8 @@ export class EmployeeService {
     page: string,
     search?: string,
     pageSize?: number,
-  ): Promise<GetAllEmployeeResponse> {
-    this.logger.info(`EmployeeService.getAll(page=${page}, search=${search})`);
+  ): Promise<GetAllUserResponse> {
+    this.logger.info(`UserService.getAll(page=${page}, search=${search})`);
 
     let pageNumber = parseInt(page) || 1;
 
@@ -170,20 +165,18 @@ export class EmployeeService {
       : undefined;
 
     if (!pageSize) {
-      const employees = await this.prismaService.employee.findMany({
+      const employees = await this.prismaService.user.findMany({
         where: searchFilter,
         orderBy: {
-          name: 'asc',
+          username: 'asc',
         },
       });
 
       return {
-        data: employees.map(({ id, nip, name, email, phone, role }) => ({
+        data: employees.map(({ id, username, email, role }) => ({
           id,
-          nip,
-          name,
+          username,
           email,
-          phone,
           role,
         })),
         meta: {
@@ -199,15 +192,15 @@ export class EmployeeService {
     const offset = (pageNumber - 1) * pageSize;
 
     const [employees, totalData] = await Promise.all([
-      this.prismaService.employee.findMany({
+      this.prismaService.user.findMany({
         skip: offset,
         take: pageSize,
         where: searchFilter,
         orderBy: {
-          name: 'asc',
+          username: 'asc',
         },
       }),
-      this.prismaService.employee.count({
+      this.prismaService.user.count({
         where: searchFilter,
       }),
     ]);
@@ -217,12 +210,10 @@ export class EmployeeService {
     const nextPage = pageNumber < totalPage ? pageNumber + 1 : null;
 
     return {
-      data: employees.map(({ id, nip, name, email, phone, role }) => ({
+      data: employees.map(({ id, username, email, role }) => ({
         id,
-        nip,
-        name,
+        username,
         email,
-        phone,
         role,
       })),
       meta: {
@@ -235,10 +226,10 @@ export class EmployeeService {
     };
   }
 
-  async getById(id: string): Promise<EmployeeDetail> {
-    this.logger.info(`EmployeeService.getById(${id})`);
+  async getById(id: string): Promise<UserDetail> {
+    this.logger.info(`UserService.getById(${id})`);
 
-    const employeeData = await this.prismaService.employee.findUnique({
+    const employeeData = await this.prismaService.user.findUnique({
       where: {
         id: id,
       },
@@ -252,26 +243,24 @@ export class EmployeeService {
 
     return {
       id: employeeData.id,
-      nip: employeeData.nip,
-      name: employeeData.name,
+      username: employeeData.username,
       email: employeeData.email,
-      phone: employeeData.phone,
       role: employeeData.role,
     };
   }
 
-  async update(id: string, dto: UpdateEmployeeDto): Promise<EmployeeDetail> {
+  async update(id: string, dto: UpdateUserDto): Promise<UserDetail> {
     this.logger.info(
-      `EmployeeService.update(id=${id}, dto=${JSON.stringify(dto)})`,
+      `UserService.update(id=${id}, dto=${JSON.stringify(dto)})`,
     );
 
-    const request = this.validationService.validate<UpdateEmployeeDto>(
-      EmployeeValidation.UPDATE,
+    const request = this.validationService.validate<UpdateUserDto>(
+      UserValidation.UPDATE,
       dto,
     );
 
     try {
-      const employee = await this.prismaService.employee.update({
+      const employee = await this.prismaService.user.update({
         where: {
           id: id,
         },
@@ -280,10 +269,8 @@ export class EmployeeService {
 
       return {
         id: employee.id,
-        nip: employee.nip,
-        name: employee.name,
+        username: employee.username,
         email: employee.email,
-        phone: employee.phone,
         role: employee.role,
       };
     } catch (error) {
@@ -298,10 +285,10 @@ export class EmployeeService {
   }
 
   async delete(id: string): Promise<string> {
-    this.logger.info(`EmployeeService.delete(${id})`);
+    this.logger.info(`UserService.delete(${id})`);
 
     try {
-      await this.prismaService.employee.delete({
+      await this.prismaService.user.delete({
         where: {
           id: id,
         },
@@ -309,7 +296,7 @@ export class EmployeeService {
     } catch (error) {
       if (error.code === 'P2025') {
         throw new HttpException(
-          'Data karyawan tidak ditemukan!',
+          'Data akun tidak ditemukan!',
           HttpStatus.NOT_FOUND,
         );
       }
