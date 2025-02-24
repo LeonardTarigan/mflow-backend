@@ -1,7 +1,7 @@
 import { MailerService } from '@nestjs-modules/mailer';
 import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
-import { Prisma, UserRole } from '@prisma/client';
-import bcrypt from 'bcryptjs';
+import { Prisma } from '@prisma/client';
+import * as bcrypt from 'bcryptjs';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { PrismaService } from 'src/common/prisma.service';
 import { ValidationService } from 'src/common/validation.service';
@@ -26,53 +26,27 @@ export class UserService {
     private readonly mailerService: MailerService,
   ) {}
 
-  async generateNip(role: UserRole): Promise<string> {
-    const roleValues = Object.values(UserRole);
-
-    const roleIndex = roleValues.indexOf(role);
-    if (roleIndex === -1) {
-      throw new Error(`Invalid role: ${role}`);
-    }
-
-    const roleCode = (roleIndex + 1).toString().padStart(2, '0');
-
-    const year = new Date().getFullYear().toString().slice(-2);
-
-    const sequence = (await this.prismaService.user.count()) + 1;
-
-    const paddedSequence = sequence.toString().padStart(4, '0');
-
-    return `${year}${roleCode}${paddedSequence}`;
-  }
-
-  generatePassword(role: UserRole, nip: string): string {
+  generatePassword(name: string, role: string): string {
     const roleMap = {
       ADMIN: 'ADM',
-      DOKTER: 'DKT',
-      PERAWAT: 'PRW',
-      BIDAN: 'BDN',
+      DOKTER: 'DCT',
       FARMASI: 'FRM',
-      APOTEKER: 'APT',
       STAFF: 'STF',
     };
 
-    const roleCode = roleMap[role].split('').reverse().join('') || 'USR';
+    const roleCode = roleMap[role.toUpperCase()] || 'USR';
 
-    const nipSuffix = nip.slice(-4).split('').reverse().join('');
+    const namePart = name.slice(0, 4).toLowerCase();
+    const randomNum = Math.floor(100 + Math.random() * 900);
 
-    const specialChars = ['!', '@', '#', '$', '%', '*', '?'];
-    const specialChar =
-      specialChars[Math.floor(Math.random() * specialChars.length)];
-
-    return `${roleCode}${nipSuffix}${specialChar}`;
+    return `${namePart}.${roleCode}#${randomNum}`;
   }
 
   async add(dto: AddUserDto): Promise<AddUserResponse> {
     this.logger.info(`UserService.add(${JSON.stringify(dto)})`);
 
     const generatedId = uuid();
-    const generatedNip = await this.generateNip(dto.role);
-    const generatedPassword = this.generatePassword(dto.role, generatedNip);
+    const generatedPassword = this.generatePassword(dto.username, dto.role);
 
     const addEmployeeRequest = this.validationService.validate<AddUserRequest>(
       UserValidation.ADD,
