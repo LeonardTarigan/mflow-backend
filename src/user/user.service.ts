@@ -9,7 +9,6 @@ import { v4 as uuid } from 'uuid';
 import { Logger } from 'winston';
 import {
   AddUserDto,
-  AddUserRequest,
   AddUserResponse,
   GetAllUserResponse,
   UpdateUserDto,
@@ -45,16 +44,13 @@ export class UserService {
   async add(dto: AddUserDto): Promise<AddUserResponse> {
     this.logger.info(`UserService.add(${JSON.stringify(dto)})`);
 
-    const generatedPassword = this.generatePassword(dto.username, dto.role);
-
-    const addEmployeeRequest = this.validationService.validate<AddUserRequest>(
+    const addUserRequest = this.validationService.validate<AddUserDto>(
       UserValidation.ADD,
-      {
-        ...dto,
-        id: uuid(),
-        password: generatedPassword,
-      },
+      dto,
     );
+
+    const generatedPassword = this.generatePassword(dto.username, dto.role);
+    const generatedId = uuid();
 
     const totalWithSameEmail = await this.prismaService.user.count({
       where: {
@@ -69,37 +65,39 @@ export class UserService {
       );
     }
 
-    addEmployeeRequest.password = await bcrypt.hash(
-      addEmployeeRequest.password,
-      10,
-    );
+    const hashedPassword = await bcrypt.hash(generatedPassword, 10);
 
-    const employee = await this.prismaService.user.create({
-      data: addEmployeeRequest,
+    const user = await this.prismaService.user.create({
+      data: {
+        id: generatedId,
+        password: hashedPassword,
+        ...addUserRequest,
+      },
     });
 
     try {
       await this.mailerService.sendMail({
-        to: employee.email,
+        to: user.email,
         subject: 'Informasi Akun MFlow Anda',
         template: 'user-welcome',
         context: {
-          username: employee.username,
+          username: user.username,
           password: generatedPassword,
         },
       });
+      console.log('selesai mailer');
     } catch (error) {
       this.logger.error(`Mailer error: ${error}`);
     }
 
     return {
       user: {
-        id: employee.id,
-        username: employee.username,
-        email: employee.email,
-        role: employee.role,
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        role: user.role,
       },
-      token: employee.token,
+      token: user.token,
     };
   }
 

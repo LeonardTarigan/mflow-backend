@@ -15,7 +15,7 @@ describe('DrugController', () => {
 
   const path = '/api/drugs';
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule, TestModule],
     }).compile();

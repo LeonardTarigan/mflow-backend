@@ -4,16 +4,16 @@ import * as request from 'supertest';
 import { TestModule } from 'test/test.module';
 import { AppModule } from '../../../src/app.module';
 import { JwtService } from '@nestjs/jwt';
-import { RoomTestService } from './room.spec.service';
+import { UserTestService } from './user.spec.service';
 
-describe('RoomController', () => {
+describe('UserController', () => {
   let app: INestApplication;
-  let testService: RoomTestService;
+  let testService: UserTestService;
   let jwtService: JwtService;
   let token: string;
-  let testRecordId: number;
+  let testRecordId: string;
 
-  const path = '/api/rooms';
+  const path = '/api/users';
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -23,7 +23,7 @@ describe('RoomController', () => {
     app = moduleFixture.createNestApplication();
     await app.init();
 
-    testService = app.get(RoomTestService);
+    testService = app.get(UserTestService);
     jwtService = app.get(JwtService);
 
     token = jwtService.sign({
@@ -33,13 +33,17 @@ describe('RoomController', () => {
   });
 
   afterAll(async () => {
-    await testService.deleteRoom();
+    await testService.deleteUser();
   });
 
   describe(`POST ${path}`, () => {
     it('should not be authorized', async () => {
       const res = await request(app.getHttpServer()).post(path).send({
-        name: testService.TEST_ROOM_NAME,
+        id: testService.TEST_USER_ID,
+        username: testService.TEST_USER_NAME,
+        email: testService.TEST_USER_EMAIL,
+        role: testService.TEST_USER_ROLE,
+        password: testService.TEST_USER_PASSWORD,
       });
 
       expect(res.status).toBe(401);
@@ -51,7 +55,11 @@ describe('RoomController', () => {
         .post(path)
         .set('Authorization', `Bearer ${token}`)
         .send({
+          id: '',
           name: '',
+          email: '',
+          role: '',
+          password: '',
         });
 
       expect(res.status).toBe(400);
@@ -63,14 +71,16 @@ describe('RoomController', () => {
         .post(path)
         .set('Authorization', `Bearer ${token}`)
         .send({
-          name: testService.TEST_ROOM_NAME,
+          username: testService.TEST_USER_NAME,
+          email: testService.TEST_USER_EMAIL,
+          role: testService.TEST_USER_ROLE,
         });
 
       expect(res.status).toBe(201);
-      expect(res.body.data.name).toBe(testService.TEST_ROOM_NAME);
+      expect(res.body.data.user.email).toBe(testService.TEST_USER_EMAIL);
       expect(res.body.error).toBeUndefined();
 
-      testRecordId = res.body.data.id;
+      testRecordId = res.body.data.user.id;
     });
   });
 
@@ -82,7 +92,7 @@ describe('RoomController', () => {
       expect(res.body.error).toBeDefined();
     });
 
-    it('should be able to get all rooms data', async () => {
+    it('should be able to get all users data', async () => {
       const res = await request(app.getHttpServer())
         .get(path)
         .set('Authorization', `Bearer ${token}`);
@@ -95,11 +105,15 @@ describe('RoomController', () => {
   });
 
   describe(`PATCH ${path}`, () => {
+    const NEW_USER_NAME = 'updated_name';
+    const NEW_USER_ROLE = 'ADMIN';
+
     it('should not be authorized', async () => {
       const res = await request(app.getHttpServer())
         .patch(`${path}/${testRecordId}`)
         .send({
-          name: testService.TEST_ROOM_NAME,
+          username: NEW_USER_NAME,
+          role: NEW_USER_ROLE,
         });
 
       expect(res.status).toBe(401);
@@ -108,10 +122,11 @@ describe('RoomController', () => {
 
     it('should not be found', async () => {
       const res = await request(app.getHttpServer())
-        .patch(`${path}/0`)
+        .patch(`${path}/invalid-uuid`)
         .set('Authorization', `Bearer ${token}`)
         .send({
-          name: testService.TEST_ROOM_NAME,
+          username: NEW_USER_NAME,
+          role: NEW_USER_ROLE,
         });
 
       expect(res.status).toBe(404);
@@ -123,25 +138,25 @@ describe('RoomController', () => {
         .patch(`${path}/${testRecordId}`)
         .set('Authorization', `Bearer ${token}`)
         .send({
-          name: '',
+          username: '',
+          role: '',
         });
 
       expect(res.status).toBe(400);
       expect(res.body.error).toBeDefined();
     });
 
-    it('should update name', async () => {
-      const NEW_ROOM_NAME = 'updated_name';
-
+    it('should update username and role', async () => {
       const res = await request(app.getHttpServer())
         .patch(`${path}/${testRecordId}`)
         .set('Authorization', `Bearer ${token}`)
         .send({
-          name: NEW_ROOM_NAME,
+          username: NEW_USER_NAME,
+          role: NEW_USER_ROLE,
         });
 
       expect(res.status).toBe(200);
-      expect(res.body.data.name).toBe(NEW_ROOM_NAME);
+      expect(res.body.data.username).toBe(NEW_USER_NAME);
       expect(res.body.error).toBeUndefined();
     });
   });
@@ -167,7 +182,7 @@ describe('RoomController', () => {
 
     it('should not be found', async () => {
       const res = await request(app.getHttpServer())
-        .delete(`${path}/0`)
+        .delete(`${path}/invalid-uuid`)
         .set('Authorization', `Bearer ${token}`);
 
       expect(res.status).toBe(404);

@@ -55,7 +55,7 @@ export class UserController {
   }
 
   @Post()
-  @HttpCode(HttpStatus.OK)
+  @HttpCode(HttpStatus.CREATED)
   async add(@Body() dto: AddUserDto): Promise<ApiResponse<AddUserResponse>> {
     const res = await this.service.add(dto);
 

@@ -10,7 +10,7 @@ describe('AuthController', () => {
   let testService: AuthTestService;
   let token: string;
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule, TestModule],
     }).compile();
