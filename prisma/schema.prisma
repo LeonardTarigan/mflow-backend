@@ -23,50 +23,87 @@ enum QueueStatus {
 }
 
 model User {
-  id         String   @id @default(uuid()) @db.Uuid
-  username   String   @db.VarChar(100)
-  role       UserRole
-  email      String   @unique @db.VarChar(100)
-  password   String   @db.VarChar(100)
-  token      String?  @db.VarChar(255)
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
+  id          String        @id @default(uuid()) @db.Uuid
+  username    String        @db.VarChar(100)
+  role        UserRole
+  email       String        @unique @db.VarChar(100)
+  password    String        @db.VarChar(100)
+  token       String?       @db.VarChar(255)
+  created_at  DateTime      @default(now())
+  updated_at  DateTime      @updatedAt
+  CareSession CareSession[]
 
   @@map("users")
 }
 
 model Drug {
-  id          Int      @id @default(autoincrement())
-  name        String   @db.VarChar(100)
-  amount_sold Int      @default(0) @db.Integer
-  unit        String   @db.VarChar(50)
-  price       Int      @db.Integer
-  created_at  DateTime @default(now())
-  updated_at  DateTime @updatedAt
+  id          Int         @id @default(autoincrement())
+  name        String      @db.VarChar(100)
+  amount_sold Int         @default(0) @db.Integer
+  unit        String      @db.VarChar(50)
+  price       Int         @db.Integer
+  created_at  DateTime    @default(now())
+  updated_at  DateTime    @updatedAt
+  DrugOrder   DrugOrder[]
 
   @@map("drugs")
 }
 
 model Room {
-  id         Int      @id @default(autoincrement())
-  name       String   @db.VarChar(100)
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
+  id          Int           @id @default(autoincrement())
+  name        String        @db.VarChar(100)
+  created_at  DateTime      @default(now())
+  updated_at  DateTime      @updatedAt
+  CareSession CareSession[]
 
   @@map("rooms")
 }
 
 model Patient {
-  id           String   @id @default(uuid()) @db.Uuid
-  name         String   @db.VarChar(255)
-  birth_date   DateTime @db.Date
-  address      String   @db.VarChar(255)
-  gender       String   @db.VarChar(100)
-  occupation   String   @db.VarChar(100)
-  phone_number String   @db.VarChar(50)
-  email        String   @db.VarChar(100)
-  created_at   DateTime @default(now())
-  updated_at   DateTime @updatedAt
+  id           String        @id @default(uuid()) @db.Uuid
+  name         String        @db.VarChar(255)
+  birth_date   DateTime      @db.Date
+  address      String        @db.VarChar(255)
+  gender       String        @db.VarChar(100)
+  occupation   String        @db.VarChar(100)
+  phone_number String        @db.VarChar(50)
+  email        String        @db.VarChar(100)
+  created_at   DateTime      @default(now())
+  updated_at   DateTime      @updatedAt
+  CareSession  CareSession[]
 
   @@map("patients")
+}
+
+model CareSession {
+  id         BigInt      @id @default(autoincrement())
+  status     QueueStatus
+  complaints String      @db.VarChar(255)
+  diagnosis  String      @db.VarChar(255)
+  patient_id String      @db.Uuid
+  doctor_id  String      @db.Uuid
+  room_id    Int
+  created_at DateTime    @default(now())
+  updated_at DateTime    @updatedAt
+
+  patient   Patient     @relation(fields: [patient_id], references: [id])
+  doctor    User        @relation(fields: [doctor_id], references: [id])
+  room      Room        @relation(fields: [room_id], references: [id])
+  DrugOrder DrugOrder[]
+
+  @@map("care_sessions")
+}
+
+model DrugOrder {
+  id              BigInt   @id @default(autoincrement())
+  care_session_id BigInt   @db.BigInt
+  drug_id         Int      @db.Integer
+  quantity        Int      @db.Integer
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  careSession CareSession @relation(fields: [care_session_id], references: [id])
+  drug        Drug        @relation(fields: [drug_id], references: [id])
+
+  @@map("drug_orders")
 }
