@@ -5,7 +5,6 @@ import * as bcrypt from 'bcryptjs';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { PrismaService } from 'src/common/prisma.service';
 import { ValidationService } from 'src/common/validation.service';
-import { v4 as uuid } from 'uuid';
 import { Logger } from 'winston';
 import {
   AddUserDto,
@@ -50,7 +49,6 @@ export class UserService {
     );
 
     const generatedPassword = this.generatePassword(dto.username, dto.role);
-    const generatedId = uuid();
 
     const totalWithSameEmail = await this.prismaService.user.count({
       where: {
@@ -69,25 +67,29 @@ export class UserService {
 
     const user = await this.prismaService.user.create({
       data: {
-        id: generatedId,
         password: hashedPassword,
         ...addUserRequest,
       },
     });
 
     try {
-      await this.mailerService.sendMail({
-        to: user.email,
-        subject: 'Informasi Akun MFlow Anda',
-        template: 'user-welcome',
-        context: {
-          username: user.username,
-          password: generatedPassword,
-        },
-      });
-      console.log('selesai mailer');
+      await Promise.race([
+        this.mailerService.sendMail({
+          to: user.email,
+          subject: 'Informasi Akun MFlow Anda',
+          template: 'user-welcome',
+          context: {
+            username: user.username,
+            password: generatedPassword,
+          },
+        }),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Email Timeout')), 5000),
+        ),
+      ]);
+      this.logger.info('Email sent successfully');
     } catch (error) {
-      this.logger.error(`Mailer error: ${error}`);
+      this.logger.error(`Mailer error: ${error.message}`);
     }
 
     return {
