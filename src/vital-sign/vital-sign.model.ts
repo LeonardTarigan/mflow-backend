@@ -19,4 +19,4 @@ export class VitalSignDetail extends BaseVitalSign {
 export class AddVitalSignDto extends BaseVitalSign {}
 export class AddVitalSignResponse extends VitalSignDetail {}
 
-export class GetVitalSignByIdResponse extends VitalSignDetail{}
+export class GetVitalSignByIdResponse extends VitalSignDetail {}

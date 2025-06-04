@@ -1,4 +1,5 @@
 import { Gender, QueueStatus } from '@prisma/client';
+import { Decimal } from '@prisma/client/runtime/library';
 import { ResponseMeta } from 'src/common/api.model';
 
 class PatientData {
@@ -41,6 +42,15 @@ export class GetAllQueuesDetail extends BaseQueue {
   patient: { id: string; name: string };
   doctor: { id: string; username: string };
   room: { id: number; name: string };
+  vital_signs?: {
+    height_cm: Decimal;
+    weight_kg: Decimal;
+    body_temperature_c: Decimal;
+    blood_pressure: string;
+    heart_rate_bpm: number;
+    respiratory_rate_bpm: number;
+  };
+  diagnoses?: { id: number; name: string }[];
 }
 
 export class GetAllQueuesResponse {

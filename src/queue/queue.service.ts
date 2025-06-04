@@ -103,6 +103,23 @@ export class QueueService {
       patient: { select: { id: true, name: true } },
       doctor: { select: { id: true, username: true } },
       room: { select: { id: true, name: true } },
+      VitalSign: {
+        select: {
+          height_cm: true,
+          weight_kg: true,
+          body_temperature_c: true,
+          blood_pressure: true,
+          heart_rate_bpm: true,
+          respiratory_rate_bpm: true,
+        },
+      },
+      CareSessionDiagnosis: {
+        select: {
+          diagnosis: {
+            select: { id: true, name: true },
+          },
+        },
+      },
     };
 
     const includedStatuses: QueueStatus[] = isQueueActive
@@ -128,7 +145,21 @@ export class QueueService {
       });
 
       return {
-        data: careSessions.map(this.transformCareSession),
+        data: careSessions.map((session) => ({
+          ...this.transformCareSession(session),
+          vital_signs: session.VitalSign
+            ? {
+                height_cm: session.VitalSign.height_cm,
+                weight_kg: session.VitalSign.weight_kg,
+                body_temperature_c: session.VitalSign.body_temperature_c,
+                blood_pressure: session.VitalSign.blood_pressure,
+                heart_rate_bpm: session.VitalSign.heart_rate_bpm,
+                respiratory_rate_bpm: session.VitalSign.respiratory_rate_bpm,
+              }
+            : undefined,
+          diagnoses:
+            session.CareSessionDiagnosis?.map((csd) => csd.diagnosis) || [],
+        })),
         meta: {
           current_page: 1,
           previous_page: null,
@@ -148,18 +179,20 @@ export class QueueService {
         orderBy: {
           created_at: 'asc',
         },
-        include: {
-          patient: { select: { id: true, name: true } },
-          doctor: { select: { id: true, username: true } },
-          room: { select: { id: true, name: true } },
-        },
+        include: includedFields,
         where: {
           status: {
             in: includedStatuses,
           },
         },
       }),
-      this.prismaService.drug.count(),
+      this.prismaService.careSession.count({
+        where: {
+          status: {
+            in: includedStatuses,
+          },
+        },
+      }),
     ]);
 
     const totalPage = Math.ceil(totalData / pageSize);
@@ -167,7 +200,21 @@ export class QueueService {
     const nextPage = pageNumber < totalPage ? pageNumber + 1 : null;
 
     return {
-      data: careSessions.map(this.transformCareSession),
+      data: careSessions.map((session) => ({
+        ...this.transformCareSession(session),
+        vital_signs: session.VitalSign
+          ? {
+              height_cm: session.VitalSign.height_cm,
+              weight_kg: session.VitalSign.weight_kg,
+              body_temperature_c: session.VitalSign.body_temperature_c,
+              blood_pressure: session.VitalSign.blood_pressure,
+              heart_rate_bpm: session.VitalSign.heart_rate_bpm,
+              respiratory_rate_bpm: session.VitalSign.respiratory_rate_bpm,
+            }
+          : undefined,
+        diagnoses:
+          session.CareSessionDiagnosis?.map((csd) => csd.diagnosis) || [],
+      })),
       meta: {
         current_page: pageNumber,
         previous_page: previousPage,
