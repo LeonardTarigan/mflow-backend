@@ -74,7 +74,7 @@ model Patient {
   gender                Gender
   occupation            String        @db.VarChar(100)
   phone_number          String        @db.VarChar(50)
-  email                 String        @db.VarChar(100)
+  email                 String?       @db.VarChar(100)
   created_at            DateTime      @default(now())
   updated_at            DateTime      @updatedAt
   CareSession           CareSession[]

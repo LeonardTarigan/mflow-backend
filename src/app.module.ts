@@ -5,9 +5,10 @@ import { DrugModule } from './drug/drug.module';
 import { RoomModule } from './room/room.module';
 import { UserModule } from './user/user.module';
 import { QueueModule } from './queue/queue.module';
+import { PatientModule } from './patient/patient.module';
 
 @Module({
-  imports: [CommonModule, AuthModule, DrugModule, RoomModule, UserModule, QueueModule],
+  imports: [CommonModule, AuthModule, DrugModule, RoomModule, UserModule, QueueModule, PatientModule],
   controllers: [],
   providers: [],
 })
