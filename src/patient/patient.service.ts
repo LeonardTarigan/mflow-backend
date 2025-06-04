@@ -27,11 +27,39 @@ export class PatientService {
       dto,
     );
 
-    const res = await this.prismaService.patient.create({
-      data: request,
-    });
-
-    return res;
+    try {
+      const res = await this.prismaService.patient.create({
+        data: request,
+      });
+      return res;
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        const target = error.meta?.target as string[] | string | undefined;
+        if (
+          (Array.isArray(target) && target.includes('nik')) ||
+          (typeof target === 'string' && target.includes('nik'))
+        ) {
+          throw new HttpException(
+            'NIK sudah terdaftar!',
+            HttpStatus.BAD_REQUEST,
+          );
+        }
+        if (
+          (Array.isArray(target) && target.includes('medical_record_number')) ||
+          (typeof target === 'string' &&
+            target.includes('medical_record_number'))
+        ) {
+          throw new HttpException(
+            'Nomor Rekam Medis sudah terdaftar!',
+            HttpStatus.BAD_REQUEST,
+          );
+        }
+      }
+      throw error;
+    }
   }
 
   async getAll(
