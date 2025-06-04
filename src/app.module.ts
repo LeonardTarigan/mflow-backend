@@ -6,6 +6,7 @@ import { RoomModule } from './room/room.module';
 import { UserModule } from './user/user.module';
 import { QueueModule } from './queue/queue.module';
 import { PatientModule } from './patient/patient.module';
+import { VitalSignModule } from './vital-sign/vital-sign.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { PatientModule } from './patient/patient.module';
     UserModule,
     QueueModule,
     PatientModule,
+    VitalSignModule,
   ],
   controllers: [],
   providers: [],
