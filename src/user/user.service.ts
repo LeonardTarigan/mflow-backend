@@ -34,7 +34,8 @@ export class UserService {
 
     const roleCode = roleMap[role.toUpperCase()] || 'USR';
 
-    const namePart = name.slice(0, 4).toLowerCase();
+    const cleanedName = name.replace(/^(drg?)\.?\s*/i, '').trim();
+    const namePart = cleanedName.slice(0, 4).toLowerCase();
     const randomNum = Math.floor(10000 + Math.random() * 90000);
 
     return `${namePart}.${roleCode}#${randomNum}`;

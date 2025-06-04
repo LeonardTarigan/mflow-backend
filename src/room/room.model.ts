@@ -3,6 +3,8 @@ import { ResponseMeta } from 'src/common/api.model';
 class Room {
   id: number;
   name: string;
+  created_at: Date;
+  updated_at: Date;
 }
 
 export class AddRoomDto {

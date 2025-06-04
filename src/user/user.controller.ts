@@ -18,7 +18,6 @@ import {
   UserDetail,
 } from './user.model';
 import { UserService } from './user.service';
-import { Public } from 'src/auth/public.decorator';
 
 @Controller('/api/users')
 export class UserController {
@@ -55,7 +54,6 @@ export class UserController {
     };
   }
 
-  @Public()
   @Post()
   @HttpCode(HttpStatus.CREATED)
   async add(@Body() dto: AddUserDto): Promise<ApiResponse<AddUserResponse>> {

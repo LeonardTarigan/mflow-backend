@@ -22,6 +22,11 @@ enum QueueStatus {
   COMPLETED
 }
 
+enum Gender {
+  MALE
+  FEMALE
+}
+
 model User {
   id          String        @id @default(uuid()) @db.Uuid
   username    String        @db.VarChar(100)
@@ -39,9 +44,9 @@ model User {
 model Drug {
   id          Int         @id @default(autoincrement())
   name        String      @db.VarChar(100)
-  amount_sold Int         @default(0) @db.Integer
+  amount_sold Int         @default(0)
   unit        String      @db.VarChar(50)
-  price       Int         @db.Integer
+  price       Int
   created_at  DateTime    @default(now())
   updated_at  DateTime    @updatedAt
   DrugOrder   DrugOrder[]
@@ -60,26 +65,28 @@ model Room {
 }
 
 model Patient {
-  id           String        @id @default(uuid()) @db.Uuid
-  name         String        @db.VarChar(255)
-  birth_date   DateTime      @db.Date
-  address      String        @db.VarChar(255)
-  gender       String        @db.VarChar(100)
-  occupation   String        @db.VarChar(100)
-  phone_number String        @db.VarChar(50)
-  email        String        @db.VarChar(100)
-  created_at   DateTime      @default(now())
-  updated_at   DateTime      @updatedAt
-  CareSession  CareSession[]
+  id                    String        @id @default(uuid()) @db.Uuid
+  medical_record_number String?       @unique @db.VarChar(16)
+  nik                   String        @unique @db.VarChar(16)
+  name                  String        @db.VarChar(255)
+  birth_date            DateTime      @db.Date
+  address               String        @db.VarChar(255)
+  gender                Gender
+  occupation            String        @db.VarChar(100)
+  phone_number          String        @db.VarChar(50)
+  email                 String        @db.VarChar(100)
+  created_at            DateTime      @default(now())
+  updated_at            DateTime      @updatedAt
+  CareSession           CareSession[]
 
   @@map("patients")
 }
 
 model CareSession {
-  id         BigInt      @id @default(autoincrement())
+  id         Int         @id @default(autoincrement())
   status     QueueStatus
   complaints String      @db.VarChar(255)
-  diagnosis  String      @db.VarChar(255)
+  diagnosis  String?     @db.VarChar(255)
   patient_id String      @db.Uuid
   doctor_id  String      @db.Uuid
   room_id    Int
@@ -90,15 +97,16 @@ model CareSession {
   doctor    User        @relation(fields: [doctor_id], references: [id])
   room      Room        @relation(fields: [room_id], references: [id])
   DrugOrder DrugOrder[]
+  VitalSign VitalSign?
 
   @@map("care_sessions")
 }
 
 model DrugOrder {
-  id              BigInt   @id @default(autoincrement())
-  care_session_id BigInt   @db.BigInt
-  drug_id         Int      @db.Integer
-  quantity        Int      @db.Integer
+  id              Int      @id @default(autoincrement())
+  care_session_id Int
+  drug_id         Int
+  quantity        Int
   created_at      DateTime @default(now())
   updated_at      DateTime @updatedAt
 
@@ -106,4 +114,21 @@ model DrugOrder {
   drug        Drug        @relation(fields: [drug_id], references: [id])
 
   @@map("drug_orders")
+}
+
+model VitalSign {
+  id                   Int      @id @default(autoincrement())
+  care_session_id      Int      @unique
+  height_cm            Decimal  @db.Decimal(5, 2)
+  weight_kg            Decimal  @db.Decimal(5, 2)
+  body_temperature_c   Decimal  @db.Decimal(4, 2)
+  blood_pressure       String   @db.VarChar(15)
+  heart_rate_bpm       Int
+  respiratory_rate_bpm Int
+  created_at           DateTime @default(now())
+  updated_at           DateTime @updatedAt
+
+  careSession CareSession @relation(fields: [care_session_id], references: [id])
+
+  @@map("vital_signs")
 }
