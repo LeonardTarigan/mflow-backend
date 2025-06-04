@@ -1,6 +1,18 @@
-import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { ApiResponse } from 'src/common/api.model';
-import { AddPatientDto, AddPatientResponse } from './patient.model';
+import {
+  AddPatientDto,
+  AddPatientResponse,
+  PatientDetail,
+} from './patient.model';
 import { PatientService } from './patient.service';
 
 @Controller('/api/patients')
@@ -15,5 +27,26 @@ export class PatientController {
     const res = await this.patientService.add(dto);
 
     return { data: res };
+  }
+
+  @Get()
+  @HttpCode(HttpStatus.OK)
+  async getAll(
+    @Query('page') page: string,
+    @Query('search') search: string,
+    @Query('pageSize') pageSize: string,
+  ): Promise<ApiResponse<PatientDetail[]>> {
+    const parsedPageSize = pageSize ? parseInt(pageSize, 10) : undefined;
+
+    const { data, meta } = await this.patientService.getAll(
+      page,
+      search,
+      parsedPageSize,
+    );
+
+    return {
+      data,
+      meta,
+    };
   }
 }

@@ -1,4 +1,5 @@
 import { Gender } from '@prisma/client';
+import { ResponseMeta } from 'src/common/api.model';
 
 class BasePatient {
   medical_record_number?: string;
@@ -20,3 +21,8 @@ export class PatientDetail extends BasePatient {
 
 export class AddPatientDto extends BasePatient {}
 export class AddPatientResponse extends PatientDetail {}
+
+export class GetAllPatientsResponse {
+  data: PatientDetail[];
+  meta: ResponseMeta;
+}
