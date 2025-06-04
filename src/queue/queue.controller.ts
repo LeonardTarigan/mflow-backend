@@ -31,15 +31,23 @@ export class QueueController {
     return { data: res };
   }
 
-  @Get()
+  @Get('')
   @HttpCode(HttpStatus.OK)
   async getAll(
     @Query('page') page: string,
     @Query('pageSize') pageSize: string,
+    @Query('isQueueActive') isQueueActive: string,
   ): Promise<ApiResponse<GetAllQueuesDetail[]>> {
     const parsedPageSize = pageSize ? parseInt(pageSize, 10) : undefined;
 
-    const { data, meta } = await this.queueService.getAll(page, parsedPageSize);
+    const isQueueActiveBool =
+      isQueueActive === undefined ? true : isQueueActive === 'true';
+
+    const { data, meta } = await this.queueService.getAll(
+      page,
+      parsedPageSize,
+      isQueueActiveBool,
+    );
 
     return {
       data,

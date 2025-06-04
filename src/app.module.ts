@@ -8,7 +8,15 @@ import { QueueModule } from './queue/queue.module';
 import { PatientModule } from './patient/patient.module';
 
 @Module({
-  imports: [CommonModule, AuthModule, DrugModule, RoomModule, UserModule, QueueModule, PatientModule],
+  imports: [
+    CommonModule,
+    AuthModule,
+    DrugModule,
+    RoomModule,
+    UserModule,
+    QueueModule,
+    PatientModule,
+  ],
   controllers: [],
   providers: [],
 })

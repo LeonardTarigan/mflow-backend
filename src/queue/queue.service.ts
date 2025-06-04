@@ -12,6 +12,7 @@ import {
   UpdateQueueResponse,
 } from './queue.model';
 import { QueueValidation } from './queue.validation';
+import { QueueStatus } from '@prisma/client';
 
 @Injectable()
 export class QueueService {
@@ -84,7 +85,11 @@ export class QueueService {
     return res;
   }
 
-  async getAll(page: string, pageSize?: number): Promise<GetAllQueuesResponse> {
+  async getAll(
+    page: string,
+    pageSize?: number,
+    isQueueActive?: boolean,
+  ): Promise<GetAllQueuesResponse> {
     this.logger.info(`DrugService.getAll(page=${page})`);
 
     let pageNumber = parseInt(page) || 1;
@@ -100,12 +105,26 @@ export class QueueService {
       room: { select: { id: true, name: true } },
     };
 
+    const includedStatuses: QueueStatus[] = isQueueActive
+      ? [
+          'WAITING_CONSULTATION',
+          'IN_CONSULTATION',
+          'WAITING_MEDICATION',
+          'WAITING_PAYMENT',
+        ]
+      : ['COMPLETED'];
+
     if (!pageSize) {
       const careSessions = await this.prismaService.careSession.findMany({
         orderBy: {
           created_at: 'asc',
         },
         include: includedFields,
+        where: {
+          status: {
+            in: includedStatuses,
+          },
+        },
       });
 
       return {
@@ -133,6 +152,11 @@ export class QueueService {
           patient: { select: { id: true, name: true } },
           doctor: { select: { id: true, username: true } },
           room: { select: { id: true, name: true } },
+        },
+        where: {
+          status: {
+            in: includedStatuses,
+          },
         },
       }),
       this.prismaService.drug.count(),
