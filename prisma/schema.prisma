@@ -143,12 +143,12 @@ model Diagnosis {
 }
 
 model CareSessionDiagnosis {
-  careSessionId Int
-  diagnosisId   Int
+  care_session_id Int
+  diagnosis_id    Int
 
-  careSession CareSession @relation(fields: [careSessionId], references: [id], onDelete: Cascade)
-  diagnosis   Diagnosis   @relation(fields: [diagnosisId], references: [id], onDelete: Cascade)
+  careSession CareSession @relation(fields: [care_session_id], references: [id], onDelete: Cascade)
+  diagnosis   Diagnosis   @relation(fields: [diagnosis_id], references: [id], onDelete: Cascade)
 
-  @@id([careSessionId, diagnosisId])
+  @@id([care_session_id, diagnosis_id])
   @@map("care_session_diagnoses")
 }

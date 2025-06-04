@@ -7,6 +7,7 @@ import { UserModule } from './user/user.module';
 import { QueueModule } from './queue/queue.module';
 import { PatientModule } from './patient/patient.module';
 import { VitalSignModule } from './vital-sign/vital-sign.module';
+import { DiagnosisModule } from './diagnosis/diagnosis.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { VitalSignModule } from './vital-sign/vital-sign.module';
     QueueModule,
     PatientModule,
     VitalSignModule,
+    DiagnosisModule,
   ],
   controllers: [],
   providers: [],
