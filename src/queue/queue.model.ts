@@ -42,7 +42,7 @@ export class GetAllQueuesDetail extends BaseQueue {
   patient: { id: string; name: string };
   doctor: { id: string; username: string };
   room: { id: number; name: string };
-  vital_signs?: {
+  vital_sign?: {
     height_cm: Decimal;
     weight_kg: Decimal;
     body_temperature_c: Decimal;

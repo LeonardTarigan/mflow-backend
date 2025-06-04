@@ -4,7 +4,12 @@ import { PrismaService } from 'src/common/prisma.service';
 import { ValidationService } from 'src/common/validation.service';
 import { Logger } from 'winston';
 import { DiagnosisValidation } from './diagnosis.validation';
-import { AddDiagnosisDto, AddDiagnosisResponse } from './diagnosis.model';
+import {
+  AddDiagnosisDto,
+  AddDiagnosisResponse,
+  AddSessionDiagnosisDto,
+  AddSessionDiagnosisResponse,
+} from './diagnosis.model';
 
 @Injectable()
 export class DiagnosisService {
@@ -23,6 +28,25 @@ export class DiagnosisService {
     );
 
     const res = await this.prismaService.diagnosis.create({
+      data: request,
+    });
+
+    return res;
+  }
+
+  async addSessionDiagnosis(
+    dto: AddSessionDiagnosisDto,
+  ): Promise<AddSessionDiagnosisResponse> {
+    this.logger.info(
+      `DiagnosisService.addSessionDiagnosis(${JSON.stringify(dto)})`,
+    );
+
+    const request = this.validationService.validate<any>(
+      DiagnosisValidation.ADD_SESSION_DIAGNOSIS,
+      dto,
+    );
+
+    const res = await this.prismaService.careSessionDiagnosis.create({
       data: request,
     });
 

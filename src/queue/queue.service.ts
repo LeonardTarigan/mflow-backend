@@ -147,7 +147,7 @@ export class QueueService {
       return {
         data: careSessions.map((session) => ({
           ...this.transformCareSession(session),
-          vital_signs: session.VitalSign
+          vital_sign: session.VitalSign
             ? {
                 height_cm: session.VitalSign.height_cm,
                 weight_kg: session.VitalSign.weight_kg,
@@ -202,7 +202,7 @@ export class QueueService {
     return {
       data: careSessions.map((session) => ({
         ...this.transformCareSession(session),
-        vital_signs: session.VitalSign
+        vital_sign: session.VitalSign
           ? {
               height_cm: session.VitalSign.height_cm,
               weight_kg: session.VitalSign.weight_kg,

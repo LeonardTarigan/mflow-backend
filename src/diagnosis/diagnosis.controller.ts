@@ -1,7 +1,12 @@
 import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
-import { DiagnosisService } from './diagnosis.service';
-import { AddDiagnosisDto, AddDiagnosisResponse } from './diagnosis.model';
 import { ApiResponse } from 'src/common/api.model';
+import {
+  AddDiagnosisDto,
+  AddDiagnosisResponse,
+  AddSessionDiagnosisDto,
+  AddSessionDiagnosisResponse,
+} from './diagnosis.model';
+import { DiagnosisService } from './diagnosis.service';
 
 @Controller('/api/diagnoses')
 export class DiagnosisController {
@@ -13,6 +18,16 @@ export class DiagnosisController {
     @Body() dto: AddDiagnosisDto,
   ): Promise<ApiResponse<AddDiagnosisResponse>> {
     const res = await this.diagnosisService.add(dto);
+
+    return { data: res };
+  }
+
+  @Post('/sessions')
+  @HttpCode(HttpStatus.CREATED)
+  async addToSession(
+    @Body() dto: AddSessionDiagnosisDto,
+  ): Promise<ApiResponse<AddSessionDiagnosisResponse>> {
+    const res = await this.diagnosisService.addSessionDiagnosis(dto);
 
     return { data: res };
   }

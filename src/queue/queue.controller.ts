@@ -31,7 +31,7 @@ export class QueueController {
     return { data: res };
   }
 
-  @Get('')
+  @Get()
   @HttpCode(HttpStatus.OK)
   async getAll(
     @Query('page') page: string,
