@@ -83,14 +83,15 @@ model Patient {
 }
 
 model CareSession {
-  id         Int         @id @default(autoincrement())
-  status     QueueStatus
-  complaints String      @db.VarChar(255)
-  patient_id String      @db.Uuid
-  doctor_id  String      @db.Uuid
-  room_id    Int
-  created_at DateTime    @default(now())
-  updated_at DateTime    @updatedAt
+  id           Int         @id @default(autoincrement())
+  status       QueueStatus
+  complaints   String      @db.VarChar(255)
+  patient_id   String      @db.Uuid
+  doctor_id    String      @db.Uuid
+  room_id      Int
+  queue_number String      @db.VarChar(10)
+  created_at   DateTime    @default(now())
+  updated_at   DateTime    @updatedAt
 
   patient              Patient                @relation(fields: [patient_id], references: [id])
   doctor               User                   @relation(fields: [doctor_id], references: [id])
@@ -99,6 +100,7 @@ model CareSession {
   VitalSign            VitalSign?
   CareSessionDiagnosis CareSessionDiagnosis[]
 
+  @@unique([queue_number, created_at])
   @@map("care_sessions")
 }
 

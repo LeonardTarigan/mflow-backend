@@ -13,6 +13,7 @@ import {
 } from './queue.model';
 import { QueueValidation } from './queue.validation';
 import { QueueStatus } from '@prisma/client';
+import { startOfDay, endOfDay } from 'date-fns';
 
 @Injectable()
 export class QueueService {
@@ -26,6 +27,7 @@ export class QueueService {
     const {
       id,
       status,
+      queue_number,
       complaints,
       diagnosis,
       doctor,
@@ -38,6 +40,7 @@ export class QueueService {
     return {
       id,
       status,
+      queue_number,
       complaints,
       diagnosis,
       doctor,
@@ -46,6 +49,27 @@ export class QueueService {
       created_at,
       updated_at,
     };
+  }
+
+  async generateQueueNumber(): Promise<string> {
+    const todayStart = startOfDay(new Date());
+    const todayEnd = endOfDay(new Date());
+
+    const countToday = await this.prismaService.careSession.count({
+      where: {
+        created_at: {
+          gte: todayStart,
+          lte: todayEnd,
+        },
+      },
+    });
+
+    const nextNumber = countToday + 1;
+    if (nextNumber > 999) {
+      throw new Error('Queue limit exceeded for today');
+    }
+
+    return `U${String(nextNumber).padStart(3, '0')}`;
   }
 
   async add(dto: AddQueueDto): Promise<AddQueueResponse> {
@@ -72,6 +96,8 @@ export class QueueService {
       patientId = newPatient.id;
     }
 
+    const queueNumber = await this.generateQueueNumber();
+
     const res = await this.prismaService.careSession.create({
       data: {
         doctor_id: request.doctor_id,
@@ -79,6 +105,7 @@ export class QueueService {
         status: 'WAITING_CONSULTATION',
         room_id: request.room_id,
         patient_id: patientId,
+        queue_number: queueNumber,
       },
     });
 

@@ -16,6 +16,7 @@ class PatientData {
 class BaseQueue {
   id: number;
   status: QueueStatus;
+  queue_number: string;
   diagnosis?: string;
   complaints: string;
   created_at: Date;
