@@ -112,7 +112,7 @@ model DrugOrder {
   created_at      DateTime @default(now())
   updated_at      DateTime @updatedAt
 
-  careSession CareSession @relation(fields: [care_session_id], references: [id])
+  careSession CareSession @relation(fields: [care_session_id], references: [id], onDelete: Cascade)
   drug        Drug        @relation(fields: [drug_id], references: [id])
 
   @@map("drug_orders")

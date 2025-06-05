@@ -52,6 +52,7 @@ export class GetAllQueuesDetail extends BaseQueue {
     respiratory_rate_bpm: number;
   };
   diagnoses?: { id: number; name: string }[];
+  drug_orders?: { id: number; name: string; quantity: number; price: number }[];
 }
 
 export class GetAllQueuesResponse {

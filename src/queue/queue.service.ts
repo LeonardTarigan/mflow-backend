@@ -127,7 +127,9 @@ export class QueueService {
     if (pageNumber < 1) pageNumber = 1;
 
     const includedFields = {
-      patient: { select: { id: true, name: true } },
+      patient: {
+        select: { id: true, name: true, medical_record_number: true },
+      },
       doctor: { select: { id: true, username: true } },
       room: { select: { id: true, name: true } },
       VitalSign: {
@@ -144,6 +146,14 @@ export class QueueService {
         select: {
           diagnosis: {
             select: { id: true, name: true },
+          },
+        },
+      },
+      DrugOrder: {
+        select: {
+          quantity: true,
+          drug: {
+            select: { id: true, name: true, price: true },
           },
         },
       },
@@ -185,7 +195,15 @@ export class QueueService {
               }
             : undefined,
           diagnoses:
-            session.CareSessionDiagnosis?.map((csd) => csd.diagnosis) || [],
+            session.CareSessionDiagnosis?.map(({ diagnosis }) => diagnosis) ||
+            [],
+          drug_orders:
+            session.DrugOrder?.map(({ drug, quantity }) => ({
+              id: drug.id,
+              name: drug.name,
+              quantity: quantity,
+              price: drug.price,
+            })) || [],
         })),
         meta: {
           current_page: 1,
@@ -240,7 +258,14 @@ export class QueueService {
             }
           : undefined,
         diagnoses:
-          session.CareSessionDiagnosis?.map((csd) => csd.diagnosis) || [],
+          session.CareSessionDiagnosis?.map(({ diagnosis }) => diagnosis) || [],
+        drug_orders:
+          session.DrugOrder?.map(({ drug, quantity }) => ({
+            id: drug.id,
+            name: drug.name,
+            quantity: quantity,
+            price: drug.price,
+          })) || [],
       })),
       meta: {
         current_page: pageNumber,
