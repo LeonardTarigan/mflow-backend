@@ -26,3 +26,7 @@ export class GetAllPatientsResponse {
   data: PatientDetail[];
   meta: ResponseMeta;
 }
+
+export class UpdatePatientDto extends BasePatient {
+  medical_record_number?: string;
+}

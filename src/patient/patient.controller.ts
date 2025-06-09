@@ -5,6 +5,7 @@ import {
   HttpCode,
   HttpStatus,
   Param,
+  Patch,
   Post,
   Query,
 } from '@nestjs/common';
@@ -13,6 +14,7 @@ import {
   AddPatientDto,
   AddPatientResponse,
   PatientDetail,
+  UpdatePatientDto,
 } from './patient.model';
 import { PatientService } from './patient.service';
 
@@ -58,5 +60,18 @@ export class PatientController {
   ): Promise<ApiResponse<PatientDetail>> {
     const res = await this.patientService.getByMrNumber(mrNumber);
     return { data: res };
+  }
+
+  @Patch('/:id')
+  @HttpCode(HttpStatus.OK)
+  async update(
+    @Param('id') id: string,
+    @Body() dto: UpdatePatientDto,
+  ): Promise<ApiResponse<PatientDetail>> {
+    const res = await this.patientService.update(id, dto);
+
+    return {
+      data: res,
+    };
   }
 }

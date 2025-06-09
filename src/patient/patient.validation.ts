@@ -17,4 +17,8 @@ export class PatientValidation {
     email: z.string().email().optional(),
     gender: z.enum(Object.values(Gender) as [string, ...string[]]),
   });
+
+  static readonly UPDATE: ZodType = z.object({
+    medical_record_number: z.string().optional(),
+  });
 }

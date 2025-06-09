@@ -1,4 +1,5 @@
 import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { PrismaService } from 'src/common/prisma.service';
 import { ValidationService } from 'src/common/validation.service';
@@ -8,9 +9,9 @@ import {
   AddPatientResponse,
   GetAllPatientsResponse,
   PatientDetail,
+  UpdatePatientDto,
 } from './patient.model';
 import { PatientValidation } from './patient.validation';
-import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class PatientService {
@@ -160,5 +161,35 @@ export class PatientService {
       );
 
     return patientData;
+  }
+
+  async update(id: string, dto: UpdatePatientDto): Promise<PatientDetail> {
+    this.logger.info(
+      `UserService.update(id=${id}, dto=${JSON.stringify(dto)})`,
+    );
+
+    const request = this.validationService.validate<UpdatePatientDto>(
+      PatientValidation.UPDATE,
+      dto,
+    );
+
+    try {
+      const patientData = await this.prismaService.patient.update({
+        where: {
+          id: id,
+        },
+        data: request,
+      });
+
+      return patientData;
+    } catch (error) {
+      if (error.code === 'P2025') {
+        throw new HttpException(
+          'Data pasien tidak ditemukan!',
+          HttpStatus.NOT_FOUND,
+        );
+      }
+      throw error;
+    }
   }
 }
