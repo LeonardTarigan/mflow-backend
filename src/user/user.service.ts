@@ -121,10 +121,13 @@ export class UserService {
     const searchFilter = search
       ? {
           OR: [
-            { name: { contains: search, mode: Prisma.QueryMode.insensitive } },
+            {
+              username: {
+                contains: search,
+                mode: Prisma.QueryMode.insensitive,
+              },
+            },
             { email: { contains: search, mode: Prisma.QueryMode.insensitive } },
-            { phone: { contains: search, mode: Prisma.QueryMode.insensitive } },
-            { nip: { contains: search, mode: Prisma.QueryMode.insensitive } },
           ],
         }
       : undefined;

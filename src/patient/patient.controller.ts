@@ -4,6 +4,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Param,
   Post,
   Query,
 } from '@nestjs/common';
@@ -48,5 +49,14 @@ export class PatientController {
       data,
       meta,
     };
+  }
+
+  @Get('/:mrNumber([\\w\\.]+)')
+  @HttpCode(HttpStatus.OK)
+  async getByMrNumber(
+    @Param('mrNumber') mrNumber: string,
+  ): Promise<ApiResponse<PatientDetail>> {
+    const res = await this.patientService.getByMrNumber(mrNumber);
+    return { data: res };
   }
 }

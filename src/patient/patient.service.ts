@@ -7,6 +7,7 @@ import {
   AddPatientDto,
   AddPatientResponse,
   GetAllPatientsResponse,
+  PatientDetail,
 } from './patient.model';
 import { PatientValidation } from './patient.validation';
 import { Prisma } from '@prisma/client';
@@ -141,5 +142,23 @@ export class PatientService {
         total_data: totalData,
       },
     };
+  }
+
+  async getByMrNumber(mrNumber: string): Promise<PatientDetail> {
+    this.logger.info(`UserService.getByMrNumber(${mrNumber})`);
+
+    const patientData = await this.prismaService.patient.findUnique({
+      where: {
+        medical_record_number: mrNumber,
+      },
+    });
+
+    if (!patientData)
+      throw new HttpException(
+        'Data pasien tidak ditemukan!',
+        HttpStatus.NOT_FOUND,
+      );
+
+    return patientData;
   }
 }
