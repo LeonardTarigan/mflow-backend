@@ -116,8 +116,9 @@ export class QueueService {
     page: string,
     pageSize?: number,
     isQueueActive?: boolean,
+    roomId?: number,
   ): Promise<GetAllQueuesResponse> {
-    this.logger.info(`DrugService.getAll(page=${page})`);
+    this.logger.info(`QueueService.getAll(page=${page})`);
 
     let pageNumber = parseInt(page) || 1;
 
@@ -168,17 +169,23 @@ export class QueueService {
         ]
       : ['COMPLETED'];
 
+    const whereClause: any = {
+      status: {
+        in: includedStatuses,
+      },
+    };
+
+    if (roomId) {
+      whereClause.room_id = roomId;
+    }
+
     if (!pageSize) {
       const careSessions = await this.prismaService.careSession.findMany({
         orderBy: {
           created_at: 'asc',
         },
         include: includedFields,
-        where: {
-          status: {
-            in: includedStatuses,
-          },
-        },
+        where: whereClause,
       });
 
       return {
@@ -225,18 +232,10 @@ export class QueueService {
           created_at: 'asc',
         },
         include: includedFields,
-        where: {
-          status: {
-            in: includedStatuses,
-          },
-        },
+        where: whereClause,
       }),
       this.prismaService.careSession.count({
-        where: {
-          status: {
-            in: includedStatuses,
-          },
-        },
+        where: whereClause,
       }),
     ]);
 
