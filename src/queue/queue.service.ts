@@ -339,6 +339,7 @@ export class QueueService {
         DrugOrder: {
           select: {
             quantity: true,
+            dose: true,
             drug: {
               select: { id: true, name: true, price: true },
             },
@@ -361,11 +362,12 @@ export class QueueService {
         diagnoses:
           session.CareSessionDiagnosis?.map(({ diagnosis }) => diagnosis) || [],
         drug_orders:
-          session.DrugOrder?.map(({ drug, quantity }) => ({
+          session.DrugOrder?.map(({ drug, quantity, dose }) => ({
             id: drug.id,
             name: drug.name,
-            quantity: quantity,
             price: drug.price,
+            quantity,
+            dose,
           })) || [],
         doctor: session.doctor,
         patient: session.patient,

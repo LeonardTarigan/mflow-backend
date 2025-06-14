@@ -2,6 +2,7 @@ class BaseDrugOrder {
   care_session_id: number;
   drug_id: number;
   quantity: number;
+  dose: string;
 }
 
 export class DrugOrderDetail extends BaseDrugOrder {
