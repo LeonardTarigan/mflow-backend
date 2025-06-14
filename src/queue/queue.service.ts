@@ -6,7 +6,9 @@ import { Logger } from 'winston';
 import {
   AddQueueDto,
   AddQueueResponse,
+  CurrentDoctorQueueDetail,
   CurrentPharmacyQueueDetail,
+  GetActiveDoctorQueueResponse,
   GetActivePharmacyQueueResponse,
   GetAllQueuesDetail,
   GetAllQueuesResponse,
@@ -380,6 +382,66 @@ export class QueueService {
       next_queues: careSessions.slice(1).map((session) => ({
         id: session.id,
         queue_number: session.queue_number,
+      })),
+    };
+  }
+
+  async getActiveDoctorQueue(
+    id: string,
+  ): Promise<GetActiveDoctorQueueResponse> {
+    this.logger.info(`QueueService.getActiveDoctorQueues(${id})`);
+
+    const [activeSessionData, nextQueues] = await Promise.all([
+      this.prismaService.careSession.findFirst({
+        include: {
+          patient: {
+            select: {
+              id: true,
+              name: true,
+              birth_date: true,
+              gender: true,
+              occupation: true,
+            },
+          },
+          doctor: { select: { id: true, username: true } },
+        },
+        where: {
+          status: {
+            in: ['IN_CONSULTATION'],
+          },
+          doctor_id: id,
+        },
+      }),
+      this.prismaService.careSession.findMany({
+        where: {
+          status: {
+            in: ['WAITING_CONSULTATION'],
+          },
+          doctor_id: id,
+        },
+      }),
+    ]);
+
+    let currentQueue: CurrentDoctorQueueDetail;
+
+    if (activeSessionData) {
+      const { id, queue_number, doctor, patient, complaints } =
+        activeSessionData;
+
+      currentQueue = {
+        id,
+        doctor,
+        patient,
+        queue_number,
+        complaints,
+      };
+    }
+
+    return {
+      current: currentQueue,
+      next_queues: nextQueues.map(({ id, queue_number }) => ({
+        id,
+        queue_number,
       })),
     };
   }

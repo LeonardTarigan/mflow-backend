@@ -13,6 +13,7 @@ import { ApiResponse } from 'src/common/api.model';
 import {
   AddQueueDto,
   AddQueueResponse,
+  GetActiveDoctorQueueResponse,
   GetActivePharmacyQueueResponse,
   GetAllQueuesDetail,
   UpdateQueueDto,
@@ -65,6 +66,17 @@ export class QueueController {
     ApiResponse<GetActivePharmacyQueueResponse>
   > {
     const res = await this.queueService.getActivePharmacyQueues();
+    return {
+      data: res,
+    };
+  }
+
+  @Get('/doctor/:id')
+  @HttpCode(HttpStatus.OK)
+  async getActiveDoctorQueue(
+    @Param('id') id: string,
+  ): Promise<ApiResponse<GetActiveDoctorQueueResponse>> {
+    const res = await this.queueService.getActiveDoctorQueue(id);
     return {
       data: res,
     };

@@ -92,3 +92,22 @@ export class GetActivePharmacyQueueResponse {
   current: CurrentPharmacyQueueDetail;
   next_queues: { id: number; queue_number: string }[];
 }
+
+export class CurrentDoctorQueueDetail {
+  id: number;
+  queue_number: string;
+  complaints: string;
+  doctor: { id: string; username: string };
+  patient: {
+    id: string;
+    name: string;
+    birth_date: Date;
+    gender: Gender;
+    occupation: string;
+  };
+}
+
+export class GetActiveDoctorQueueResponse {
+  current: CurrentDoctorQueueDetail;
+  next_queues: { id: number; queue_number: string }[];
+}
