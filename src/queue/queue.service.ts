@@ -6,6 +6,8 @@ import { Logger } from 'winston';
 import {
   AddQueueDto,
   AddQueueResponse,
+  CurrentPharmacyQueueDetail,
+  GetActivePharmacyQueueResponse,
   GetAllQueuesDetail,
   GetAllQueuesResponse,
   UpdateQueueDto,
@@ -308,5 +310,75 @@ export class QueueService {
       }
       throw error;
     }
+  }
+
+  async getActivePharmacyQueues(): Promise<GetActivePharmacyQueueResponse> {
+    this.logger.info(`QueueService.getActivePharmacyQueues()`);
+
+    const careSessions = await this.prismaService.careSession.findMany({
+      orderBy: {
+        created_at: 'asc',
+      },
+      include: {
+        patient: {
+          select: {
+            id: true,
+            name: true,
+            birth_date: true,
+            gender: true,
+          },
+        },
+        doctor: { select: { id: true, username: true } },
+        CareSessionDiagnosis: {
+          select: {
+            diagnosis: {
+              select: { id: true, name: true },
+            },
+          },
+        },
+        DrugOrder: {
+          select: {
+            quantity: true,
+            drug: {
+              select: { id: true, name: true, price: true },
+            },
+          },
+        },
+      },
+      where: {
+        status: {
+          in: ['WAITING_MEDICATION'],
+        },
+      },
+    });
+
+    let currentQueue: CurrentPharmacyQueueDetail;
+
+    if (careSessions.length !== 0) {
+      currentQueue = careSessions.map((session) => ({
+        id: session.id,
+        queue_number: session.queue_number,
+        diagnoses:
+          session.CareSessionDiagnosis?.map(({ diagnosis }) => diagnosis) || [],
+        drug_orders:
+          session.DrugOrder?.map(({ drug, quantity }) => ({
+            id: drug.id,
+            name: drug.name,
+            quantity: quantity,
+            price: drug.price,
+          })) || [],
+        doctor: session.doctor,
+        patient: session.patient,
+        complaints: session.complaints,
+      }))[0];
+    }
+
+    return {
+      current: currentQueue,
+      next_queues: careSessions.slice(1).map((session) => ({
+        id: session.id,
+        queue_number: session.queue_number,
+      })),
+    };
   }
 }

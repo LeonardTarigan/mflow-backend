@@ -1,6 +1,7 @@
 import { Gender, QueueStatus } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 import { ResponseMeta } from 'src/common/api.model';
+import { PatientDetail } from 'src/patient/patient.model';
 
 class PatientData {
   name: string;
@@ -40,7 +41,7 @@ export class AddQueueDto {
 export class AddQueueResponse extends QueueDetail {}
 
 export class GetAllQueuesDetail extends BaseQueue {
-  patient: { id: string; name: string };
+  patient: Pick<PatientDetail, 'id' | 'name' | 'medical_record_number'>;
   doctor: { id: string; username: string };
   room: { id: number; name: string };
   vital_sign?: {
@@ -66,3 +67,22 @@ export class UpdateQueueDto {
 }
 
 export class UpdateQueueResponse extends QueueDetail {}
+
+export class CurrentPharmacyQueueDetail {
+  id: number;
+  queue_number: string;
+  complaints: string;
+  doctor: { id: string; username: string };
+  patient: { id: string; name: string; birth_date: Date; gender: Gender };
+  diagnoses: { id: number; name: string }[];
+  drug_orders: {
+    id: number;
+    name: string;
+    quantity: number;
+    price: number;
+  }[];
+}
+export class GetActivePharmacyQueueResponse {
+  current: CurrentPharmacyQueueDetail;
+  next_queues: { id: number; queue_number: string }[];
+}
