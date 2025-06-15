@@ -121,3 +121,8 @@ export class WaitingQueueDetail {
   };
   room: { id: number; name: string };
 }
+
+export class CalledQueue {
+  id: number;
+  queue_number: string;
+}

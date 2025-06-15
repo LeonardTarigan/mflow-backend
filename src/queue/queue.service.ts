@@ -342,6 +342,12 @@ export class QueueService {
       const waitingQueues = await this.getWaitingQueuesData();
       this.queueGateway.emitWaitingQueueUpdate(waitingQueues);
 
+      if (res.status === 'IN_CONSULTATION')
+        this.queueGateway.emitCalledQueueUpdate({
+          id: res.id,
+          queue_number: res.queue_number,
+        });
+
       return res;
     } catch (error) {
       if (error.code === 'P2025') {
