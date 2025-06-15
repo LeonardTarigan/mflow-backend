@@ -14,10 +14,12 @@ import {
   GetAllQueuesResponse,
   UpdateQueueDto,
   UpdateQueueResponse,
+  WaitingQueueDetail,
 } from './queue.model';
 import { QueueValidation } from './queue.validation';
 import { QueueStatus } from '@prisma/client';
 import { startOfDay, endOfDay } from 'date-fns';
+import { QueueGateway } from './queue.gateway';
 
 @Injectable()
 export class QueueService {
@@ -25,6 +27,7 @@ export class QueueService {
     private validationService: ValidationService,
     @Inject(WINSTON_MODULE_PROVIDER) private logger: Logger,
     private prismaService: PrismaService,
+    private queueGateway: QueueGateway,
   ) {}
 
   transformCareSession(session: GetAllQueuesDetail) {
@@ -76,6 +79,28 @@ export class QueueService {
     return `U${String(nextNumber).padStart(3, '0')}`;
   }
 
+  async getWaitingQueuesData(): Promise<WaitingQueueDetail[]> {
+    const waitingSessions = await this.prismaService.careSession.findMany({
+      where: {
+        status: 'WAITING_CONSULTATION',
+      },
+      include: {
+        doctor: { select: { id: true, username: true } },
+        room: { select: { id: true, name: true } },
+      },
+      orderBy: {
+        created_at: 'asc',
+      },
+    });
+
+    return waitingSessions.map(({ id, doctor, room, queue_number }) => ({
+      id,
+      doctor,
+      queue_number,
+      room,
+    }));
+  }
+
   async add(dto: AddQueueDto): Promise<AddQueueResponse> {
     this.logger.info(`QueueService.add(${JSON.stringify(dto)})`);
 
@@ -113,6 +138,9 @@ export class QueueService {
       },
     });
 
+    const waitingQueues = await this.getWaitingQueuesData();
+    this.queueGateway.emitWaitingQueueUpdate(waitingQueues);
+
     return res;
   }
 
@@ -121,6 +149,7 @@ export class QueueService {
     pageSize?: number,
     isQueueActive?: boolean,
     roomId?: number,
+    status?: string,
   ): Promise<GetAllQueuesResponse> {
     this.logger.info(`QueueService.getAll(page=${page})`);
 
@@ -164,7 +193,7 @@ export class QueueService {
       },
     };
 
-    const includedStatuses: QueueStatus[] = isQueueActive
+    let includedStatuses: QueueStatus[] = isQueueActive
       ? [
           'WAITING_CONSULTATION',
           'IN_CONSULTATION',
@@ -172,6 +201,14 @@ export class QueueService {
           'WAITING_PAYMENT',
         ]
       : ['COMPLETED'];
+
+    if (status) {
+      if (Object.values(QueueStatus).includes(status as QueueStatus)) {
+        includedStatuses = [status as QueueStatus];
+      } else {
+        throw new HttpException('Invalid status', HttpStatus.BAD_REQUEST);
+      }
+    }
 
     const whereClause: any = {
       status: {
@@ -301,6 +338,9 @@ export class QueueService {
         },
         data: request,
       });
+
+      const waitingQueues = await this.getWaitingQueuesData();
+      this.queueGateway.emitWaitingQueueUpdate(waitingQueues);
 
       return res;
     } catch (error) {

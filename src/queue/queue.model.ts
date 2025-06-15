@@ -111,3 +111,13 @@ export class GetActiveDoctorQueueResponse {
   current: CurrentDoctorQueueDetail;
   next_queues: { id: number; queue_number: string }[];
 }
+
+export class WaitingQueueDetail {
+  id: number;
+  queue_number: string;
+  doctor: {
+    id: string;
+    username: string;
+  };
+  room: { id: number; name: string };
+}
