@@ -1,11 +1,15 @@
-class Diagnosis {
+export class Diagnosis {
   id: string;
   name: string;
 }
 
-class SessionDiagnosis {
+export class SessionDiagnosis {
   care_session_id: number;
   diagnosis_id: string;
+}
+
+export class GetAllDiagnosesResponse {
+  data: Diagnosis[];
 }
 
 export class AddDiagnosisDto {

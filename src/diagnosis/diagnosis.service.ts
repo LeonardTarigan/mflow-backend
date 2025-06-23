@@ -9,6 +9,7 @@ import {
   AddDiagnosisResponse,
   AddSessionDiagnosisDto,
   AddSessionDiagnosisResponse,
+  GetAllDiagnosesResponse,
 } from './diagnosis.model';
 
 @Injectable()
@@ -18,6 +19,33 @@ export class DiagnosisService {
     @Inject(WINSTON_MODULE_PROVIDER) private logger: Logger,
     private prismaService: PrismaService,
   ) {}
+
+  async getAll(query: string): Promise<GetAllDiagnosesResponse> {
+    this.logger.info(`DiagnosisService.getAll(query=${query})`);
+
+    const diagnoses = await this.prismaService.diagnosis.findMany({
+      where: {
+        OR: [
+          {
+            id: {
+              contains: query,
+              mode: 'insensitive',
+            },
+          },
+          {
+            name: {
+              contains: query,
+              mode: 'insensitive',
+            },
+          },
+        ],
+      },
+    });
+
+    return {
+      data: diagnoses,
+    };
+  }
 
   async add(dto: AddDiagnosisDto): Promise<AddDiagnosisResponse> {
     this.logger.info(`DiagnosisService.add(${JSON.stringify(dto)})`);
