@@ -137,7 +137,7 @@ model VitalSign {
 }
 
 model Diagnosis {
-  id   Int    @id @default(autoincrement())
+  id   String @id
   name String
 
   CareSessionDiagnosis CareSessionDiagnosis[]
@@ -147,7 +147,7 @@ model Diagnosis {
 
 model CareSessionDiagnosis {
   care_session_id Int
-  diagnosis_id    Int
+  diagnosis_id    String
 
   careSession CareSession @relation(fields: [care_session_id], references: [id], onDelete: Cascade)
   diagnosis   Diagnosis   @relation(fields: [diagnosis_id], references: [id], onDelete: Cascade)

@@ -52,7 +52,7 @@ export class GetAllQueuesDetail extends BaseQueue {
     heart_rate_bpm: number;
     respiratory_rate_bpm: number;
   };
-  diagnoses?: { id: number; name: string }[];
+  diagnoses?: { id: string; name: string }[];
   drug_orders?: {
     id: number;
     name: string;
@@ -79,7 +79,7 @@ export class CurrentPharmacyQueueDetail {
   complaints: string;
   doctor: { id: string; username: string };
   patient: { id: string; name: string; birth_date: Date; gender: Gender };
-  diagnoses: { id: number; name: string }[];
+  diagnoses: { id: string; name: string }[];
   drug_orders: {
     id: number;
     name: string;
