@@ -17,5 +17,8 @@ export class AddDiagnosisDto {
 }
 export class AddDiagnosisResponse extends Diagnosis {}
 
-export class AddSessionDiagnosisDto extends SessionDiagnosis {}
+export class AddSessionDiagnosisDto extends SessionDiagnosis {
+  care_session_id: number;
+  diagnosis_ids: string[];
+}
 export class AddSessionDiagnosisResponse extends SessionDiagnosis {}

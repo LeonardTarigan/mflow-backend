@@ -62,22 +62,25 @@ export class DiagnosisService {
     return res;
   }
 
-  async addSessionDiagnosis(
+  async addSessionDiagnoses(
     dto: AddSessionDiagnosisDto,
-  ): Promise<AddSessionDiagnosisResponse> {
-    this.logger.info(
-      `DiagnosisService.addSessionDiagnosis(${JSON.stringify(dto)})`,
-    );
-
-    const request = this.validationService.validate<any>(
+  ): Promise<AddSessionDiagnosisResponse[]> {
+    const request = this.validationService.validate(
       DiagnosisValidation.ADD_SESSION_DIAGNOSIS,
       dto,
     );
 
-    const res = await this.prismaService.careSessionDiagnosis.create({
-      data: request,
-    });
+    const created = await this.prismaService.$transaction(
+      request.diagnosis_ids.map((diagnosis_id) =>
+        this.prismaService.careSessionDiagnosis.create({
+          data: {
+            care_session_id: request.care_session_id,
+            diagnosis_id,
+          },
+        }),
+      ),
+    );
 
-    return res;
+    return created;
   }
 }

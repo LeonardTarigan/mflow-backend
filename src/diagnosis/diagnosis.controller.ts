@@ -47,9 +47,8 @@ export class DiagnosisController {
   @HttpCode(HttpStatus.CREATED)
   async addToSession(
     @Body() dto: AddSessionDiagnosisDto,
-  ): Promise<ApiResponse<AddSessionDiagnosisResponse>> {
-    const res = await this.diagnosisService.addSessionDiagnosis(dto);
-
+  ): Promise<ApiResponse<AddSessionDiagnosisResponse[]>> {
+    const res = await this.diagnosisService.addSessionDiagnoses(dto);
     return { data: res };
   }
 }

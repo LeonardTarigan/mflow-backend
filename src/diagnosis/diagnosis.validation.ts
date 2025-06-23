@@ -7,6 +7,8 @@ export class DiagnosisValidation {
 
   static readonly ADD_SESSION_DIAGNOSIS: ZodType = z.object({
     care_session_id: z.number().int().positive(),
-    diagnosis_id: z.number().int().positive(),
+    diagnosis_ids: z
+      .array(z.string())
+      .min(1, { message: 'Diagnosis harus diisi minimal satu' }),
   });
 }
