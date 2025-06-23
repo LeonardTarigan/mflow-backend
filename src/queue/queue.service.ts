@@ -223,7 +223,7 @@ export class QueueService {
     if (!pageSize) {
       const careSessions = await this.prismaService.careSession.findMany({
         orderBy: {
-          created_at: 'asc',
+          created_at: isQueueActive ? 'asc' : 'desc',
         },
         include: includedFields,
         where: whereClause,
@@ -270,7 +270,7 @@ export class QueueService {
         skip: offset,
         take: pageSize,
         orderBy: {
-          created_at: 'asc',
+          created_at: isQueueActive ? 'asc' : 'desc',
         },
         include: includedFields,
         where: whereClause,
