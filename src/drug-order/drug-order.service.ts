@@ -23,20 +23,38 @@ export class DrugOrderService {
     );
 
     try {
-      const [drugOrder] = await this.prismaService.$transaction([
-        this.prismaService.drugOrder.create({
-          data: request,
-        }),
-        this.prismaService.drug.update({
-          where: { id: request.drug_id },
-          data: {
-            amount_sold: {
-              increment: request.quantity,
+      const transactions = [];
+
+      for (const drug of request.drugs) {
+        transactions.push(
+          this.prismaService.drugOrder.create({
+            data: {
+              care_session_id: request.care_session_id,
+              drug_id: drug.drug_id,
+              quantity: drug.quantity,
+              dose: drug.dose,
             },
-          },
-        }),
-      ]);
-      return drugOrder;
+          }),
+        );
+
+        transactions.push(
+          this.prismaService.drug.update({
+            where: { id: drug.drug_id },
+            data: {
+              amount_sold: {
+                increment: drug.quantity,
+              },
+            },
+          }),
+        );
+      }
+
+      await this.prismaService.$transaction(transactions);
+
+      return request.drugs.map((drug) => ({
+        care_session_id: request.care_session_id,
+        ...drug,
+      }));
     } catch (error) {
       if (error.code === 'P2003') {
         this.logger.error('Care session or drug not found');

@@ -11,7 +11,11 @@ export class DrugOrderDetail extends BaseDrugOrder {
   updated_at: Date;
 }
 
-export class AddDrugOrderDto extends BaseDrugOrder {}
-export class AddDrugOrderResponse extends DrugOrderDetail {}
+export class AddDrugOrderDto {
+  care_session_id: number;
+  drugs: Omit<BaseDrugOrder, 'care_session_id'>[];
+}
+
+export class AddDrugOrderResponse extends BaseDrugOrder {}
 
 export class GetDrugOrderByIdResponse extends DrugOrderDetail {}
