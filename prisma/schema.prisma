@@ -99,7 +99,7 @@ model CareSession {
   DrugOrder            DrugOrder[]
   VitalSign            VitalSign?
   CareSessionDiagnosis CareSessionDiagnosis[]
-  SessionTreatment     SessionTreatment[]
+  CareSessionTreatment CareSessionTreatment[]
 
   @@unique([queue_number, created_at])
   @@map("care_sessions")
@@ -158,17 +158,17 @@ model CareSessionDiagnosis {
 }
 
 model Treatment {
-  id               Int                @id @default(autoincrement())
-  name             String             @db.VarChar(255)
+  id               Int                    @id @default(autoincrement())
+  name             String                 @db.VarChar(255)
   price            Int
-  created_at       DateTime           @default(now())
-  updated_at       DateTime           @updatedAt
-  SessionTreatment SessionTreatment[]
+  created_at       DateTime               @default(now())
+  updated_at       DateTime               @updatedAt
+  SessionTreatment CareSessionTreatment[]
 
   @@map("treatments")
 }
 
-model SessionTreatment {
+model CareSessionTreatment {
   care_session_id Int
   treatment_id    Int
   applied_price   Int      @default(0)
@@ -177,8 +177,8 @@ model SessionTreatment {
   updated_at      DateTime @updatedAt
 
   careSession CareSession @relation(fields: [care_session_id], references: [id], onDelete: Cascade)
-  penanganan  Treatment   @relation(fields: [treatment_id], references: [id])
+  treatment   Treatment   @relation(fields: [treatment_id], references: [id])
 
   @@id([care_session_id, treatment_id])
-  @@map("session_treatments")
+  @@map("care_session_treatments")
 }

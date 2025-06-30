@@ -1,8 +1,11 @@
 import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
+import { QueueStatus } from '@prisma/client';
+import { endOfDay, startOfDay } from 'date-fns';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { PrismaService } from 'src/common/prisma.service';
 import { ValidationService } from 'src/common/validation.service';
 import { Logger } from 'winston';
+import { QueueGateway } from './queue.gateway';
 import {
   AddQueueDto,
   AddQueueResponse,
@@ -10,16 +13,12 @@ import {
   CurrentPharmacyQueueDetail,
   GetActiveDoctorQueueResponse,
   GetActivePharmacyQueueResponse,
-  GetAllQueuesDetail,
   GetAllQueuesResponse,
   UpdateQueueDto,
   UpdateQueueResponse,
   WaitingQueueDetail,
 } from './queue.model';
 import { QueueValidation } from './queue.validation';
-import { QueueStatus } from '@prisma/client';
-import { startOfDay, endOfDay } from 'date-fns';
-import { QueueGateway } from './queue.gateway';
 
 @Injectable()
 export class QueueService {
@@ -30,7 +29,7 @@ export class QueueService {
     private queueGateway: QueueGateway,
   ) {}
 
-  transformCareSession(session: GetAllQueuesDetail) {
+  transformCareSession(session: any) {
     const {
       id,
       status,
@@ -42,6 +41,7 @@ export class QueueService {
       room,
       created_at,
       updated_at,
+      CareSessionTreatment,
     } = session;
 
     return {
@@ -55,6 +55,14 @@ export class QueueService {
       room,
       created_at,
       updated_at,
+      treatments:
+        CareSessionTreatment?.map(({ treatment, quantity, applied_price }) => ({
+          id: treatment.id,
+          name: treatment.name,
+          price: treatment.price,
+          quantity,
+          applied_price,
+        })) || [],
     };
   }
 
@@ -183,6 +191,15 @@ export class QueueService {
           },
         },
       },
+      CareSessionTreatment: {
+        select: {
+          treatment: {
+            select: { id: true, name: true, price: true },
+          },
+          quantity: true,
+          applied_price: true,
+        },
+      },
       DrugOrder: {
         select: {
           quantity: true,
@@ -252,6 +269,16 @@ export class QueueService {
               quantity: quantity,
               price: drug.price,
             })) || [],
+          treatments:
+            session.CareSessionTreatment?.map(
+              ({ treatment, quantity, applied_price }) => ({
+                id: treatment.id,
+                name: treatment.name,
+                price: treatment.price,
+                quantity,
+                applied_price,
+              }),
+            ) || [],
         })),
         meta: {
           current_page: 1,
@@ -306,6 +333,16 @@ export class QueueService {
             quantity: quantity,
             price: drug.price,
           })) || [],
+        treatments:
+          session.CareSessionTreatment?.map(
+            ({ treatment, quantity, applied_price }) => ({
+              id: treatment.id,
+              name: treatment.name,
+              price: treatment.price,
+              quantity,
+              applied_price,
+            }),
+          ) || [],
       })),
       meta: {
         current_page: pageNumber,

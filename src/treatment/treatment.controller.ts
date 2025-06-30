@@ -11,7 +11,12 @@ import {
   Query,
 } from '@nestjs/common';
 import { TreatmentService } from './treatment.service';
-import { AddTreatmentDto, UpdateTreatmentDto } from './treatment.model';
+import {
+  AddSessionTreatmentDto,
+  AddSessionTreatmentResponse,
+  AddTreatmentDto,
+  UpdateTreatmentDto,
+} from './treatment.model';
 import { ApiResponse } from 'src/common/api.model';
 import { Treatment } from '@prisma/client';
 
@@ -26,6 +31,15 @@ export class TreatmentController {
   ): Promise<ApiResponse<AddTreatmentDto>> {
     const res = await this.treatmentService.add(dto);
 
+    return { data: res };
+  }
+
+  @Post('/sessions')
+  @HttpCode(HttpStatus.CREATED)
+  async addToSession(
+    @Body() dto: AddSessionTreatmentDto,
+  ): Promise<ApiResponse<AddSessionTreatmentResponse[]>> {
+    const res = await this.treatmentService.addSessionTreatments(dto);
     return { data: res };
   }
 

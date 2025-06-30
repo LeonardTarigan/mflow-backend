@@ -3,6 +3,8 @@ import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { PrismaService } from 'src/common/prisma.service';
 import { ValidationService } from 'src/common/validation.service';
 import {
+  AddSessionTreatmentDto,
+  AddSessionTreatmentResponse,
   AddTreatmentDto,
   AddTreatmentResponse,
   GetAllTreatmentsResponse,
@@ -34,6 +36,45 @@ export class TreatmentService {
     });
 
     return res;
+  }
+
+  async addSessionTreatments(
+    dto: AddSessionTreatmentDto,
+  ): Promise<AddSessionTreatmentResponse[]> {
+    const request = this.validationService.validate<AddSessionTreatmentDto>(
+      TreatmentValidation.ADD_SESSION_TREATMENT,
+      dto,
+    );
+
+    const treatmentIds = request.treatments.map((t) => t.treatment_id);
+    const treatments = await this.prismaService.treatment.findMany({
+      where: { id: { in: treatmentIds } },
+      select: { id: true, price: true },
+    });
+    const priceMap = new Map<number, number>();
+    treatments.forEach((t) => priceMap.set(t.id, t.price));
+
+    const operations = request.treatments.map(({ treatment_id, quantity }) =>
+      this.prismaService.careSessionTreatment.create({
+        data: {
+          care_session_id: request.care_session_id,
+          treatment_id: treatment_id,
+          quantity,
+          applied_price: priceMap.get(treatment_id) ?? 0,
+        },
+      }),
+    );
+
+    const created = await this.prismaService.$transaction(operations);
+
+    return created.map(
+      ({ care_session_id, treatment_id, applied_price, quantity }) => ({
+        care_session_id,
+        treatment_id,
+        applied_price,
+        quantity,
+      }),
+    );
   }
 
   async getAll(

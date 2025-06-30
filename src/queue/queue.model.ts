@@ -2,6 +2,7 @@ import { Gender, QueueStatus } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 import { ResponseMeta } from 'src/common/api.model';
 import { PatientDetail } from 'src/patient/patient.model';
+import { Treatment } from 'src/treatment/treatment.model';
 
 class PatientData {
   name: string;
@@ -59,6 +60,7 @@ export class GetAllQueuesDetail extends BaseQueue {
     quantity: number;
     price: number;
   }[];
+  treatments: Omit<Treatment, 'created_at' | 'updated_at'>[];
 }
 
 export class GetAllQueuesResponse {
