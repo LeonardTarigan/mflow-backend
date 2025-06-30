@@ -9,6 +9,7 @@ import { PatientModule } from './patient/patient.module';
 import { VitalSignModule } from './vital-sign/vital-sign.module';
 import { DiagnosisModule } from './diagnosis/diagnosis.module';
 import { DrugOrderModule } from './drug-order/drug-order.module';
+import { TreatmentModule } from './treatment/treatment.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { DrugOrderModule } from './drug-order/drug-order.module';
     VitalSignModule,
     DiagnosisModule,
     DrugOrderModule,
+    TreatmentModule,
   ],
   controllers: [],
   providers: [],
