@@ -450,6 +450,16 @@ export class QueueService {
             },
           },
           doctor: { select: { id: true, username: true } },
+          VitalSign: {
+            select: {
+              height_cm: true,
+              weight_kg: true,
+              body_temperature_c: true,
+              blood_pressure: true,
+              heart_rate_bpm: true,
+              respiratory_rate_bpm: true,
+            },
+          },
         },
         where: {
           status: {
@@ -471,7 +481,7 @@ export class QueueService {
     let currentQueue: CurrentDoctorQueueDetail;
 
     if (activeSessionData) {
-      const { id, queue_number, doctor, patient, complaints } =
+      const { id, queue_number, doctor, patient, complaints, VitalSign } =
         activeSessionData;
 
       currentQueue = {
@@ -480,6 +490,7 @@ export class QueueService {
         patient,
         queue_number,
         complaints,
+        vital_sign: VitalSign,
       };
     }
 

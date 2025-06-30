@@ -105,6 +105,14 @@ export class CurrentDoctorQueueDetail {
     gender: Gender;
     occupation: string;
   };
+  vital_sign: {
+    height_cm: Decimal;
+    weight_kg: Decimal;
+    body_temperature_c: Decimal;
+    blood_pressure: string;
+    heart_rate_bpm: number;
+    respiratory_rate_bpm: number;
+  };
 }
 
 export class GetActiveDoctorQueueResponse {
