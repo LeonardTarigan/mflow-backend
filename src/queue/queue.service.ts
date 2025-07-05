@@ -400,7 +400,47 @@ export class QueueService {
           id: numericId,
         },
         data: request,
+        include: {
+          patient: true,
+        },
       });
+
+      if (
+        request.status === 'COMPLETED' &&
+        res.patient &&
+        !res.patient.medical_record_number
+      ) {
+        const lastPatientWithMr = await this.prismaService.patient.findFirst({
+          where: {
+            medical_record_number: { not: null },
+          },
+          orderBy: {
+            medical_record_number: 'desc',
+          },
+          select: {
+            medical_record_number: true,
+          },
+        });
+
+        let nextNumber = 1;
+        if (lastPatientWithMr?.medical_record_number) {
+          const lastNumber = parseInt(
+            lastPatientWithMr.medical_record_number.replace(/\./g, ''),
+            10,
+          );
+          nextNumber = lastNumber + 1;
+        }
+
+        const formatted = nextNumber
+          .toString()
+          .padStart(6, '0')
+          .replace(/(\d{2})(\d{2})(\d{2})/, '$1.$2.$3');
+
+        await this.prismaService.patient.update({
+          where: { id: res.patient_id },
+          data: { medical_record_number: formatted },
+        });
+      }
 
       const waitingQueues = await this.getWaitingQueuesData();
       this.queueGateway.emitWaitingQueueUpdate(waitingQueues);
