@@ -41,6 +41,7 @@ export class QueueController {
     @Query('isQueueActive') isQueueActive: string,
     @Query('roomId') roomId?: string,
     @Query('status') status?: string,
+    @Query('search') search?: string,
   ): Promise<ApiResponse<GetAllQueuesDetail[]>> {
     const parsedPageSize = pageSize ? parseInt(pageSize, 10) : undefined;
     const parsedRoomId = roomId ? parseInt(roomId, 10) : undefined;
@@ -54,6 +55,7 @@ export class QueueController {
       isQueueActiveBool,
       parsedRoomId,
       status,
+      search,
     );
 
     return {

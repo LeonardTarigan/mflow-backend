@@ -158,8 +158,11 @@ export class QueueService {
     isQueueActive?: boolean,
     roomId?: number,
     status?: string,
+    search?: string,
   ): Promise<GetAllQueuesResponse> {
-    this.logger.info(`QueueService.getAll(page=${page})`);
+    this.logger.info(
+      `QueueService.getAll(page=${page}, search=${search}, pageSize=${pageSize}, isQueueActive=${isQueueActive}, roomId=${roomId}, status=${status})`,
+    );
 
     let pageNumber = parseInt(page) || 1;
 
@@ -241,6 +244,17 @@ export class QueueService {
 
     if (roomId) {
       whereClause.room_id = roomId;
+    }
+
+    if (search) {
+      whereClause.OR = [
+        { patient: { name: { contains: search, mode: 'insensitive' } } },
+        {
+          patient: {
+            medical_record_number: { contains: search, mode: 'insensitive' },
+          },
+        },
+      ];
     }
 
     if (!pageSize) {
