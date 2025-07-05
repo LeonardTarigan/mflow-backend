@@ -59,6 +59,8 @@ export class GetAllQueuesDetail extends BaseQueue {
     name: string;
     quantity: number;
     price: number;
+    dose: string;
+    unit: string;
   }[];
   treatments: Omit<Treatment, 'created_at' | 'updated_at'>[];
 }

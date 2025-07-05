@@ -203,8 +203,14 @@ export class QueueService {
       DrugOrder: {
         select: {
           quantity: true,
+          dose: true,
           drug: {
-            select: { id: true, name: true, price: true },
+            select: {
+              id: true,
+              name: true,
+              price: true,
+              unit: true,
+            },
           },
         },
       },
@@ -263,11 +269,13 @@ export class QueueService {
             session.CareSessionDiagnosis?.map(({ diagnosis }) => diagnosis) ||
             [],
           drug_orders:
-            session.DrugOrder?.map(({ drug, quantity }) => ({
+            session.DrugOrder?.map(({ drug, quantity, dose }) => ({
               id: drug.id,
               name: drug.name,
               quantity: quantity,
               price: drug.price,
+              unit: drug.unit,
+              dose,
             })) || [],
           treatments:
             session.CareSessionTreatment?.map(
@@ -311,6 +319,8 @@ export class QueueService {
     const previousPage = pageNumber > 1 ? pageNumber - 1 : null;
     const nextPage = pageNumber < totalPage ? pageNumber + 1 : null;
 
+    console.log(careSessions);
+
     return {
       data: careSessions.map((session) => ({
         ...this.transformCareSession(session),
@@ -327,11 +337,13 @@ export class QueueService {
         diagnoses:
           session.CareSessionDiagnosis?.map(({ diagnosis }) => diagnosis) || [],
         drug_orders:
-          session.DrugOrder?.map(({ drug, quantity }) => ({
+          session.DrugOrder?.map(({ drug, quantity, dose }) => ({
             id: drug.id,
             name: drug.name,
             quantity: quantity,
             price: drug.price,
+            unit: drug.unit,
+            dose,
           })) || [],
         treatments:
           session.CareSessionTreatment?.map(
