@@ -65,13 +65,32 @@ export class DiagnosisService {
   async addSessionDiagnoses(
     dto: AddSessionDiagnosisDto,
   ): Promise<AddSessionDiagnosisResponse[]> {
-    const request = this.validationService.validate(
+    const request = this.validationService.validate<AddSessionDiagnosisDto>(
       DiagnosisValidation.ADD_SESSION_DIAGNOSIS,
       dto,
     );
 
+    let externalDiagnosisIds: string[] = [];
+    if (request.external_diagnoses && request.external_diagnoses.length > 0) {
+      const createdDiagnoses = await this.prismaService.$transaction(
+        request.external_diagnoses.map(({ id, name }) =>
+          this.prismaService.diagnosis.create({
+            data: { id, name },
+          }),
+        ),
+      );
+      externalDiagnosisIds = createdDiagnoses.map((d) => d.id);
+    }
+
+    const allDiagnosisIds = [
+      ...(request.diagnosis_ids || []),
+      ...externalDiagnosisIds,
+    ];
+
+    const uniqueDiagnosisIds = Array.from(new Set(allDiagnosisIds));
+
     const created = await this.prismaService.$transaction(
-      request.diagnosis_ids.map((diagnosis_id) =>
+      uniqueDiagnosisIds.map((diagnosis_id) =>
         this.prismaService.careSessionDiagnosis.create({
           data: {
             care_session_id: request.care_session_id,

@@ -10,5 +10,16 @@ export class DiagnosisValidation {
     diagnosis_ids: z
       .array(z.string())
       .min(1, { message: 'Diagnosis harus diisi minimal satu' }),
+    external_diagnoses: z
+      .array(
+        z.object({
+          id: z.string({ message: 'Nama tidak boleh kosong' }).min(1).max(100),
+          name: z
+            .string({ message: 'Nama tidak boleh kosong' })
+            .min(1)
+            .max(100),
+        }),
+      )
+      .optional(),
   });
 }

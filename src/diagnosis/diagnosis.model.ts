@@ -20,5 +20,6 @@ export class AddDiagnosisResponse extends Diagnosis {}
 export class AddSessionDiagnosisDto extends SessionDiagnosis {
   care_session_id: number;
   diagnosis_ids: string[];
+  external_diagnoses?: Diagnosis[];
 }
 export class AddSessionDiagnosisResponse extends SessionDiagnosis {}
