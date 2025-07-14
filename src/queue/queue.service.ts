@@ -119,37 +119,42 @@ export class QueueService {
 
     let patientId = request.patient_id;
 
-    if (!request.patient_id) {
-      const newPatient = await this.prismaService.patient.create({
+    try {
+      if (!request.patient_id && request.patient_data) {
+        const newPatient = await this.prismaService.patient.create({
+          data: {
+            ...request.patient_data,
+          },
+        });
+
+        this.logger.info(
+          `New patient data added : (${JSON.stringify(newPatient)})`,
+        );
+
+        patientId = newPatient.id;
+      }
+
+      const queueNumber = await this.generateQueueNumber();
+
+      const res = await this.prismaService.careSession.create({
         data: {
-          ...request.patient_data,
+          doctor_id: request.doctor_id,
+          complaints: request.complaints,
+          status: 'WAITING_CONSULTATION',
+          room_id: request.room_id,
+          patient_id: patientId,
+          queue_number: queueNumber,
         },
       });
 
-      this.logger.info(
-        `New patient data added : (${JSON.stringify(newPatient)})`,
-      );
+      const waitingQueues = await this.getWaitingQueuesData();
+      this.queueGateway.emitWaitingQueueUpdate(waitingQueues);
 
-      patientId = newPatient.id;
+      return res;
+    } catch (error) {
+      this.logger.error(`Error in QueueService.add: ${error.message}`);
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
     }
-
-    const queueNumber = await this.generateQueueNumber();
-
-    const res = await this.prismaService.careSession.create({
-      data: {
-        doctor_id: request.doctor_id,
-        complaints: request.complaints,
-        status: 'WAITING_CONSULTATION',
-        room_id: request.room_id,
-        patient_id: patientId,
-        queue_number: queueNumber,
-      },
-    });
-
-    const waitingQueues = await this.getWaitingQueuesData();
-    this.queueGateway.emitWaitingQueueUpdate(waitingQueues);
-
-    return res;
   }
 
   async getAll(
