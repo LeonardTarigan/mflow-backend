@@ -20,9 +20,7 @@ export class RoomTestService {
 
   async deleteTestRoom(id: number): Promise<void> {
     await this.prismaService.room.delete({
-      where: {
-        id,
-      },
+      where: { id },
     });
   }
 }

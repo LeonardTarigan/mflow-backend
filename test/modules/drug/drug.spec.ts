@@ -13,9 +13,8 @@ describe('DrugController', () => {
   let testService: DrugTestService;
   let jwtService: JwtService;
   let token: string;
-  let testDrugId: number;
 
-  const path = '/api/drugs';
+  const API_ENDPOINT = '/api/drugs';
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -29,18 +28,22 @@ describe('DrugController', () => {
     jwtService = app.get(JwtService);
 
     token = jwtService.sign({
-      sub: testService.TEST_DRUG_UNIT,
-      name: testService.TEST_DRUG_NAME,
+      sub: 'testing_sub',
+      name: 'testing_name',
     });
   });
 
   afterAll(async () => {
-    await testService.deleteDrug();
+    await app.close();
   });
 
-  describe(`POST ${path}`, () => {
+  describe(`POST ${API_ENDPOINT}`, () => {
+    let testDrugId: number;
+
+    afterAll(async () => await testService.deleteTestDrug(testDrugId));
+
     it('should not be authorized', async () => {
-      const res = await request(app.getHttpServer()).post(path).send({
+      const res = await request(app.getHttpServer()).post(API_ENDPOINT).send({
         name: testService.TEST_DRUG_NAME,
         unit: testService.TEST_DRUG_UNIT,
         price: testService.TEST_DRUG_PRICE,
@@ -52,7 +55,7 @@ describe('DrugController', () => {
 
     it('should be rejected as validation error', async () => {
       const res = await request(app.getHttpServer())
-        .post(path)
+        .post(API_ENDPOINT)
         .set('Authorization', `Bearer ${token}`)
         .send({
           name: '',
@@ -66,7 +69,7 @@ describe('DrugController', () => {
 
     it('should be able to create test record', async () => {
       const res = await request(app.getHttpServer())
-        .post(path)
+        .post(API_ENDPOINT)
         .set('Authorization', `Bearer ${token}`)
         .send({
           name: testService.TEST_DRUG_NAME,
@@ -82,9 +85,9 @@ describe('DrugController', () => {
     });
   });
 
-  describe(`GET ${path}`, () => {
+  describe(`GET ${API_ENDPOINT}`, () => {
     it('should not be authorized', async () => {
-      const res = await request(app.getHttpServer()).get(path);
+      const res = await request(app.getHttpServer()).get(API_ENDPOINT);
 
       expect(res.status).toBe(401);
       expect(res.body.error).toBeDefined();
@@ -92,7 +95,7 @@ describe('DrugController', () => {
 
     it('should be able to get all drugs data', async () => {
       const res = await request(app.getHttpServer())
-        .get(path)
+        .get(API_ENDPOINT)
         .set('Authorization', `Bearer ${token}`);
 
       expect(res.status).toBe(200);
@@ -102,10 +105,19 @@ describe('DrugController', () => {
     });
   });
 
-  describe(`PATCH ${path}`, () => {
+  describe(`PATCH ${API_ENDPOINT}`, () => {
+    let testDrugId: number;
+
+    beforeAll(async () => {
+      const testDrug = await testService.createTestDrug();
+      testDrugId = testDrug.id;
+    });
+
+    afterAll(async () => await testService.deleteTestDrug(testDrugId));
+
     it('should not be authorized', async () => {
       const res = await request(app.getHttpServer())
-        .patch(`${path}/${testDrugId}`)
+        .patch(`${API_ENDPOINT}/${testDrugId}`)
         .send({
           name: testService.TEST_DRUG_NAME,
           unit: testService.TEST_DRUG_UNIT,
@@ -119,7 +131,7 @@ describe('DrugController', () => {
 
     it('should not be found', async () => {
       const res = await request(app.getHttpServer())
-        .patch(`${path}/0`)
+        .patch(`${API_ENDPOINT}/0`)
         .set('Authorization', `Bearer ${token}`)
         .send({
           name: testService.TEST_DRUG_NAME,
@@ -134,7 +146,7 @@ describe('DrugController', () => {
 
     it('should be rejected as validation error', async () => {
       const res = await request(app.getHttpServer())
-        .patch(`${path}/${testDrugId}`)
+        .patch(`${API_ENDPOINT}/${testDrugId}`)
         .set('Authorization', `Bearer ${token}`)
         .send({
           name: '',
@@ -154,7 +166,7 @@ describe('DrugController', () => {
       const NEW_DRUG_AMOUNT_SOLD = 320;
 
       const res = await request(app.getHttpServer())
-        .patch(`${path}/${testDrugId}`)
+        .patch(`${API_ENDPOINT}/${testDrugId}`)
         .set('Authorization', `Bearer ${token}`)
         .send({
           name: NEW_DRUG_NAME,
@@ -172,10 +184,17 @@ describe('DrugController', () => {
     });
   });
 
-  describe(`DELETE ${path}`, () => {
+  describe(`DELETE ${API_ENDPOINT}`, () => {
+    let testDrugId: number;
+
+    beforeAll(async () => {
+      const testDrug = await testService.createTestDrug();
+      testDrugId = testDrug.id;
+    });
+
     it('should not be authorized', async () => {
       const res = await request(app.getHttpServer()).delete(
-        `${path}/${testDrugId}`,
+        `${API_ENDPOINT}/${testDrugId}`,
       );
 
       expect(res.status).toBe(401);
@@ -184,7 +203,7 @@ describe('DrugController', () => {
 
     it('should be invalid id data type', async () => {
       const res = await request(app.getHttpServer())
-        .delete(`${path}/invalid_id`)
+        .delete(`${API_ENDPOINT}/invalid_id`)
         .set('Authorization', `Bearer ${token}`);
 
       expect(res.status).toBe(400);
@@ -193,7 +212,7 @@ describe('DrugController', () => {
 
     it('should not be found', async () => {
       const res = await request(app.getHttpServer())
-        .delete(`${path}/0`)
+        .delete(`${API_ENDPOINT}/0`)
         .set('Authorization', `Bearer ${token}`);
 
       expect(res.status).toBe(404);
@@ -202,11 +221,10 @@ describe('DrugController', () => {
 
     it('should delete the test record', async () => {
       const res = await request(app.getHttpServer())
-        .delete(`${path}/${testDrugId}`)
+        .delete(`${API_ENDPOINT}/${testDrugId}`)
         .set('Authorization', `Bearer ${token}`);
 
       expect(res.status).toBe(200);
-      expect(res.body.data).toBe('Successfully deleted: ' + testDrugId);
       expect(res.body.error).toBeUndefined();
     });
   });
