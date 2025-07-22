@@ -1,23 +1,20 @@
 import {
   Body,
   Controller,
+  DefaultValuePipe,
   Delete,
   Get,
   HttpCode,
   HttpStatus,
   Param,
+  ParseIntPipe,
   Patch,
   Post,
   Query,
 } from '@nestjs/common';
 import { ApiResponse } from 'src/common/api.model';
 
-import {
-  AddDrugDto,
-  AddDrugResponse,
-  DrugDetail,
-  UpdateDrugDto,
-} from './drug.model';
+import { CreateDrugDto, DrugEntity, UpdateDrugDto } from './drug.model';
 import { DrugService } from './drug.service';
 
 @Controller('/api/drugs')
@@ -26,8 +23,8 @@ export class DrugController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  async add(@Body() dto: AddDrugDto): Promise<ApiResponse<AddDrugResponse>> {
-    const res = await this.drugService.add(dto);
+  async add(@Body() dto: CreateDrugDto): Promise<ApiResponse<DrugEntity>> {
+    const res = await this.drugService.create(dto);
 
     return { data: res };
   }
@@ -35,16 +32,14 @@ export class DrugController {
   @Get()
   @HttpCode(HttpStatus.OK)
   async getAll(
-    @Query('page') page: string,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('pageSize', new DefaultValuePipe(10), ParseIntPipe) pageSize: number,
     @Query('search') search: string,
-    @Query('pageSize') pageSize: string,
-  ): Promise<ApiResponse<DrugDetail[]>> {
-    const parsedPageSize = pageSize ? parseInt(pageSize, 10) : undefined;
-
+  ): Promise<ApiResponse<DrugEntity[]>> {
     const { data, meta } = await this.drugService.getAll(
       page,
+      pageSize,
       search,
-      parsedPageSize,
     );
 
     return {
@@ -56,9 +51,9 @@ export class DrugController {
   @Patch('/:id')
   @HttpCode(HttpStatus.OK)
   async update(
-    @Param('id') id: string,
+    @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateDrugDto,
-  ): Promise<ApiResponse<DrugDetail>> {
+  ): Promise<ApiResponse<DrugEntity>> {
     const res = await this.drugService.update(id, dto);
 
     return {
@@ -68,7 +63,9 @@ export class DrugController {
 
   @Delete('/:id')
   @HttpCode(HttpStatus.OK)
-  async delete(@Param('id') id: string): Promise<ApiResponse<string>> {
+  async delete(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<ApiResponse<string>> {
     const res = await this.drugService.delete(id);
 
     return {

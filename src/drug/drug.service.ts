@@ -6,9 +6,8 @@ import { ValidationService } from 'src/common/validation.service';
 import { Logger } from 'winston';
 
 import {
-  AddDrugDto,
-  AddDrugResponse,
-  DrugDetail,
+  CreateDrugDto,
+  DrugEntity,
   GetAllDrugsResponse,
   UpdateDrugDto,
 } from './drug.model';
@@ -17,41 +16,51 @@ import { DrugValidation } from './drug.validation';
 @Injectable()
 export class DrugService {
   constructor(
-    private validationService: ValidationService,
     @Inject(WINSTON_MODULE_PROVIDER) private logger: Logger,
+    private validationService: ValidationService,
     private prismaService: PrismaService,
   ) {}
 
-  async add(dto: AddDrugDto): Promise<AddDrugResponse> {
+  async create(dto: CreateDrugDto): Promise<DrugEntity> {
     this.logger.info(`DrugService.add(${JSON.stringify(dto)})`);
 
-    const request = this.validationService.validate<AddDrugDto>(
+    const validatedReq = this.validationService.validate<CreateDrugDto>(
       DrugValidation.ADD,
       dto,
     );
 
-    const res = await this.prismaService.drug.create({
-      data: request,
-    });
+    try {
+      const res = await this.prismaService.drug.create({
+        data: validatedReq,
+      });
 
-    return res;
+      return res;
+    } catch (error) {
+      if (error.code === 'P2002') {
+        throw new HttpException(
+          `Obat dengan nama ${validatedReq.name} sudah ada!`,
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      throw error;
+    }
   }
 
   async getAll(
-    page: string,
+    pageNumber: number,
+    pageSize: number,
     search?: string,
-    pageSize?: number,
   ): Promise<GetAllDrugsResponse> {
-    this.logger.info(`DrugService.getAll(page=${page}, search=${search})`);
+    this.logger.info(
+      `DrugService.getAll(page=${pageNumber}, search=${search}), pageSize=${pageSize}`,
+    );
 
-    let pageNumber = parseInt(page) || 1;
-
-    if (pageNumber == 0)
-      throw new HttpException('Invalid page data type', HttpStatus.BAD_REQUEST);
+    const offset = (pageNumber - 1) * pageSize;
 
     if (pageNumber < 1) pageNumber = 1;
 
-    const searchFilter = search
+    const searchFilter: Prisma.DrugWhereInput | undefined = search
       ? {
           OR: [
             { name: { contains: search, mode: Prisma.QueryMode.insensitive } },
@@ -60,29 +69,7 @@ export class DrugService {
         }
       : undefined;
 
-    if (!pageSize) {
-      const drugs = await this.prismaService.drug.findMany({
-        where: searchFilter,
-        orderBy: {
-          name: 'asc',
-        },
-      });
-
-      return {
-        data: drugs,
-        meta: {
-          current_page: 1,
-          previous_page: null,
-          next_page: null,
-          total_page: 1,
-          total_data: drugs.length,
-        },
-      };
-    }
-
-    const offset = (pageNumber - 1) * pageSize;
-
-    const [drugs, totalData] = await Promise.all([
+    const [drugs, totalData] = await this.prismaService.$transaction([
       this.prismaService.drug.findMany({
         skip: offset,
         take: pageSize,
@@ -112,16 +99,10 @@ export class DrugService {
     };
   }
 
-  async update(id: string, dto: UpdateDrugDto): Promise<DrugDetail> {
+  async update(id: number, dto: UpdateDrugDto): Promise<DrugEntity> {
     this.logger.info(
       `DrugService.update(id=${id}, dto=${JSON.stringify(dto)})`,
     );
-
-    const numericId = parseInt(id);
-
-    if (isNaN(numericId)) {
-      throw new HttpException('Invalid ID format', HttpStatus.BAD_REQUEST);
-    }
 
     const request = this.validationService.validate<UpdateDrugDto>(
       DrugValidation.UPDATE,
@@ -130,9 +111,7 @@ export class DrugService {
 
     try {
       const res = await this.prismaService.drug.update({
-        where: {
-          id: numericId,
-        },
+        where: { id },
         data: request,
       });
 
@@ -148,21 +127,15 @@ export class DrugService {
     }
   }
 
-  async delete(id: string): Promise<string> {
+  async delete(id: number): Promise<string> {
     this.logger.info(`DrugService.delete(${id})`);
 
-    const numericId = parseInt(id);
-
-    if (isNaN(numericId)) {
-      throw new HttpException('Invalid ID format', HttpStatus.BAD_REQUEST);
-    }
-
     try {
-      await this.prismaService.drug.delete({
-        where: {
-          id: numericId,
-        },
+      const drug = await this.prismaService.drug.delete({
+        where: { id },
       });
+
+      return `Berhasil menghapus obat ${drug.name}`;
     } catch (error) {
       if (error.code === 'P2025') {
         throw new HttpException(
@@ -172,7 +145,5 @@ export class DrugService {
       }
       throw error;
     }
-
-    return `Successfully deleted: ${id}`;
   }
 }

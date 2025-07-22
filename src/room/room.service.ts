@@ -16,8 +16,8 @@ import { RoomValidation } from './room.validation';
 @Injectable()
 export class RoomService {
   constructor(
-    private validationService: ValidationService,
     @Inject(WINSTON_MODULE_PROVIDER) private logger: Logger,
+    private validationService: ValidationService,
     private prismaService: PrismaService,
   ) {}
 
@@ -33,11 +33,12 @@ export class RoomService {
       const room = await this.prismaService.room.create({
         data: validatedReq,
       });
+
       return room;
     } catch (error) {
       if (error.code === 'P2002') {
         throw new HttpException(
-          `Ruangan dengan nama "${validatedReq.name}" sudah ada!`,
+          `Ruangan dengan nama ${validatedReq.name} sudah ada!`,
           HttpStatus.BAD_REQUEST,
         );
       }
@@ -47,9 +48,9 @@ export class RoomService {
   }
 
   async getAll(
-    pageNumber?: number,
+    pageNumber: number,
+    pageSize: number,
     search?: string,
-    pageSize?: number,
   ): Promise<GetAllRoomsResponse> {
     this.logger.info(
       `RoomService.getAll(page=${pageNumber}, search=${search}, pageSize=${pageSize})`,

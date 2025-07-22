@@ -32,14 +32,14 @@ export class RoomController {
   @Get()
   @HttpCode(HttpStatus.OK)
   async getAll(
-    @Query('search') search: string,
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
     @Query('pageSize', new DefaultValuePipe(10), ParseIntPipe) pageSize: number,
+    @Query('search') search: string,
   ): Promise<ApiResponse<RoomEntity[]>> {
     const { data, meta } = await this.roomService.getAll(
       page,
-      search,
       pageSize,
+      search,
     );
 
     return {
