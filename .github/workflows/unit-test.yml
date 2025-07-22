@@ -30,5 +30,4 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
           JWT_EXPIRES_IN: ${{secrets.JWT_EXPIRES_IN}}
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: pnpm test
