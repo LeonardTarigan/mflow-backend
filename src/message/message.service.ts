@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { HttpException, Inject, Injectable } from '@nestjs/common';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { TDocumentDefinitions } from 'pdfmake/interfaces';
 import { ValidationService } from 'src/common/validation.service';
@@ -47,11 +47,14 @@ export class MessageService {
     });
 
     const data = await res.json();
+
     if (!data.id) throw new Error('Failed to upload media to WhatsApp');
     return data.id;
   }
 
-  async generateMedicalCardBuffer(dto: GenerateMedicalCardDto) {
+  async generateMedicalCardBuffer(
+    dto: GenerateMedicalCardDto,
+  ): Promise<Buffer> {
     this.validationService.validate<GenerateMedicalCardDto>(
       MessageValidation.GENERATE_MEDICAL_CARD,
       dto,
@@ -159,7 +162,7 @@ export class MessageService {
 
   async sendMedicalCardMessage(dto: GenerateMedicalCardDto) {
     try {
-      const buffer = (await this.generateMedicalCardBuffer(dto)) as Buffer;
+      const buffer = await this.generateMedicalCardBuffer(dto);
       const mediaId = await this.uploadToWhatsapp(buffer);
 
       const docPromise = fetch(`${this.WHATSAPP_API_BASE_URL}/messages`, {
@@ -190,9 +193,9 @@ export class MessageService {
           to: '6281377471625',
           type: 'template',
           template: {
-            name: 'hello_world',
+            name: 'mflow_medical_card',
             language: {
-              code: 'en_US',
+              code: 'id',
             },
           },
         }),
@@ -208,8 +211,9 @@ export class MessageService {
         this.logger.error(
           `WhatsApp document send error: ${JSON.stringify(docData.error)}`,
         );
-        throw new Error(
+        throw new HttpException(
           `WhatsApp document send error: ${docData.error.message || docData.error}`,
+          500,
         );
       }
 
@@ -228,7 +232,7 @@ export class MessageService {
         `sendMedicalCardMessage error: ${error.message}`,
         error.stack,
       );
-      throw error;
+      throw new HttpException(error.message, 500);
     }
   }
 }

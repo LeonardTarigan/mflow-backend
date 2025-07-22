@@ -16,6 +16,7 @@ export class AddUserRequest extends BaseUser {
 
 export class UserDetail extends BaseUser {
   id: string;
+  password?: string;
 }
 
 export class AddUserResponse {

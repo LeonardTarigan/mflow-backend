@@ -1,18 +1,11 @@
-import { UserRole } from '@prisma/client';
+import { OmitType, PickType } from '@nestjs/mapped-types';
+import { UserDetail } from 'src/user/user.model';
 
-export class AuthLoginDto {
-  email: string;
-  password: string;
-}
+export class AuthLoginDto extends PickType(UserDetail, ['email', 'password']) {}
 
-export class AuthData {
-  id: string;
-  username: string;
-  email: string;
-  role: UserRole;
-}
+export class AuthData extends OmitType(UserDetail, ['password']) {}
 
-export class AuthResponse {
+export class AuthLoginResponse {
   user: AuthData;
-  token?: string;
+  token: string;
 }

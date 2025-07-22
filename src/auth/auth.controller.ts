@@ -1,5 +1,5 @@
 import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
-import { AuthLoginDto, AuthResponse } from 'src/auth/auth.model';
+import { AuthLoginDto, AuthLoginResponse } from 'src/auth/auth.model';
 import { ApiResponse } from 'src/common/api.model';
 import { AuthService } from './auth.service';
 import { Public } from './public.decorator';
@@ -11,20 +11,10 @@ export class AuthController {
   @Public()
   @Post('/login')
   @HttpCode(HttpStatus.OK)
-  async login(@Body() dto: AuthLoginDto): Promise<ApiResponse<AuthResponse>> {
+  async login(
+    @Body() dto: AuthLoginDto,
+  ): Promise<ApiResponse<AuthLoginResponse>> {
     const result = await this.authService.login(dto);
-
-    return {
-      data: result,
-    };
-  }
-
-  @Post('/logout')
-  @HttpCode(HttpStatus.OK)
-  async logout(
-    @Body() req: { id: string },
-  ): Promise<ApiResponse<AuthResponse>> {
-    const result = await this.authService.logout(req.id);
 
     return {
       data: result,

@@ -100,7 +100,6 @@ export class UserService {
         email: user.email,
         role: user.role,
       },
-      token: user.token,
     };
   }
 
@@ -214,6 +213,30 @@ export class UserService {
       username: employeeData.username,
       email: employeeData.email,
       role: employeeData.role,
+    };
+  }
+
+  async getByEmail(email: string): Promise<UserDetail> {
+    this.logger.info(`UserService.getByEmail(${email})`);
+
+    const employeeData = await this.prismaService.user.findUnique({
+      where: {
+        email: email,
+      },
+    });
+
+    if (!employeeData)
+      throw new HttpException(
+        'Data karyawan tidak ditemukan!',
+        HttpStatus.NOT_FOUND,
+      );
+
+    return {
+      id: employeeData.id,
+      username: employeeData.username,
+      email: employeeData.email,
+      role: employeeData.role,
+      password: employeeData.password,
     };
   }
 

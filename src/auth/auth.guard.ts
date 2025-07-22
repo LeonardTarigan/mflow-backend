@@ -1,9 +1,8 @@
 import {
   CanActivate,
   ExecutionContext,
-  HttpException,
-  HttpStatus,
   Injectable,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Reflector } from '@nestjs/core';
@@ -24,16 +23,17 @@ export class AuthGuard implements CanActivate {
       context.getHandler(),
       context.getClass(),
     ]);
+
     if (isPublic) {
       return true;
     }
 
     const request = context.switchToHttp().getRequest();
+
     const token = this.extractTokenFromHeader(request);
     if (!token) {
-      throw new HttpException(
+      throw new UnauthorizedException(
         'Akses ditolak. Izin untuk mengakses sumber daya ini tidak tersedia.',
-        HttpStatus.UNAUTHORIZED,
       );
     }
     try {
@@ -42,9 +42,8 @@ export class AuthGuard implements CanActivate {
       });
       request['user'] = payload;
     } catch {
-      throw new HttpException(
+      throw new UnauthorizedException(
         'Akses ditolak. Izin untuk mengakses sumber daya ini tidak tersedia.',
-        HttpStatus.UNAUTHORIZED,
       );
     }
     return true;
