@@ -210,7 +210,13 @@ export class UserService {
 
       return this.removeResponsePassword(user);
     } catch (error) {
-      if (error.code === 'P2025') {
+      if (error.code === 'P2023') {
+        this.logger.error(`Prisma Error (${error.code}): `);
+        throw new HttpException(
+          'Format user ID invalid!',
+          HttpStatus.BAD_REQUEST,
+        );
+      } else if (error.code === 'P2025') {
         throw new HttpException(
           'Data akun tidak ditemukan!',
           HttpStatus.NOT_FOUND,
@@ -233,19 +239,17 @@ export class UserService {
 
       return `Berhasil menghapus akun: ${id}`;
     } catch (error) {
-      if (error.code === 'P2025') {
-        this.logger.error(`Prisma Error (${error.code}): `);
-        throw new HttpException(
-          'Data akun tidak ditemukan!',
-          HttpStatus.NOT_FOUND,
-        );
-      }
-
       if (error.code === 'P2023') {
         this.logger.error(`Prisma Error (${error.code}): `);
         throw new HttpException(
           'Format user ID invalid!',
           HttpStatus.BAD_REQUEST,
+        );
+      } else if (error.code === 'P2025') {
+        this.logger.error(`Prisma Error (${error.code}): `);
+        throw new HttpException(
+          'Data akun tidak ditemukan!',
+          HttpStatus.NOT_FOUND,
         );
       }
 

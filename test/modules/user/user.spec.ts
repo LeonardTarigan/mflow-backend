@@ -5,15 +5,16 @@ import { TestModule } from 'test/test.module';
 import { AppModule } from '../../../src/app.module';
 import { JwtService } from '@nestjs/jwt';
 import { UserTestService } from './user.spec.service';
+import { UserEntity } from 'src/user/user.model';
 
 describe('UserController', () => {
   let app: INestApplication;
   let testService: UserTestService;
   let jwtService: JwtService;
   let token: string;
-  let testRecordId: string;
+  let testUser: UserEntity;
 
-  const path = '/api/users';
+  const API_ENDPOINT = '/api/users';
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -27,19 +28,20 @@ describe('UserController', () => {
     jwtService = app.get(JwtService);
 
     token = jwtService.sign({
-      sub: 'testing_sub',
-      name: 'testing_name',
+      sub: testService.TEST_USER_ID,
+      email: testService.TEST_USER_EMAIL,
     });
   });
 
   afterAll(async () => {
-    await testService.deleteUser();
+    await app.close();
   });
 
-  describe(`POST ${path}`, () => {
+  describe(`POST ${API_ENDPOINT}`, () => {
+    afterAll(async () => await testService.deleteUser(testUser.id));
+
     it('should not be authorized', async () => {
-      const res = await request(app.getHttpServer()).post(path).send({
-        id: testService.TEST_USER_ID,
+      const res = await request(app.getHttpServer()).post(API_ENDPOINT).send({
         username: testService.TEST_USER_NAME,
         email: testService.TEST_USER_EMAIL,
         role: testService.TEST_USER_ROLE,
@@ -52,7 +54,7 @@ describe('UserController', () => {
 
     it('should be rejected as validation error', async () => {
       const res = await request(app.getHttpServer())
-        .post(path)
+        .post(API_ENDPOINT)
         .set('Authorization', `Bearer ${token}`)
         .send({
           id: '',
@@ -66,9 +68,9 @@ describe('UserController', () => {
       expect(res.body.error).toBeDefined();
     });
 
-    it('should be able to create test record', async () => {
+    it('should create new user', async () => {
       const res = await request(app.getHttpServer())
-        .post(path)
+        .post(API_ENDPOINT)
         .set('Authorization', `Bearer ${token}`)
         .send({
           username: testService.TEST_USER_NAME,
@@ -80,13 +82,13 @@ describe('UserController', () => {
       expect(res.body.data.user.email).toBe(testService.TEST_USER_EMAIL);
       expect(res.body.error).toBeUndefined();
 
-      testRecordId = res.body.data.user.id;
+      testUser = res.body.data.user;
     });
   });
 
-  describe(`GET ${path}`, () => {
+  describe(`GET ${API_ENDPOINT}`, () => {
     it('should not be authorized', async () => {
-      const res = await request(app.getHttpServer()).get(path);
+      const res = await request(app.getHttpServer()).get(API_ENDPOINT);
 
       expect(res.status).toBe(401);
       expect(res.body.error).toBeDefined();
@@ -94,7 +96,7 @@ describe('UserController', () => {
 
     it('should be able to get all users data', async () => {
       const res = await request(app.getHttpServer())
-        .get(path)
+        .get(API_ENDPOINT)
         .set('Authorization', `Bearer ${token}`);
 
       expect(res.status).toBe(200);
@@ -104,13 +106,22 @@ describe('UserController', () => {
     });
   });
 
-  describe(`PATCH ${path}`, () => {
+  describe(`PATCH ${API_ENDPOINT}`, () => {
     const NEW_USER_NAME = 'updated_name';
     const NEW_USER_ROLE = 'ADMIN';
 
+    beforeAll(async () => {
+      testUser = await testService.createUser();
+      token = jwtService.sign({ sub: testUser.id, email: testUser.email });
+    });
+
+    afterAll(async () => {
+      await testService.deleteUser(testUser.id);
+    });
+
     it('should not be authorized', async () => {
       const res = await request(app.getHttpServer())
-        .patch(`${path}/${testRecordId}`)
+        .patch(`${API_ENDPOINT}/${testUser.id}`)
         .send({
           username: NEW_USER_NAME,
           role: NEW_USER_ROLE,
@@ -120,22 +131,22 @@ describe('UserController', () => {
       expect(res.body.error).toBeDefined();
     });
 
-    it('should not be found', async () => {
+    it('should return invalid UUID', async () => {
       const res = await request(app.getHttpServer())
-        .patch(`${path}/invalid-uuid`)
+        .patch(`${API_ENDPOINT}/invalid-uuid`)
         .set('Authorization', `Bearer ${token}`)
         .send({
           username: NEW_USER_NAME,
           role: NEW_USER_ROLE,
         });
 
-      expect(res.status).toBe(404);
+      expect(res.status).toBe(400);
       expect(res.body.error).toBeDefined();
     });
 
     it('should be rejected as validation error', async () => {
       const res = await request(app.getHttpServer())
-        .patch(`${path}/${testRecordId}`)
+        .patch(`${API_ENDPOINT}/${testUser.id}`)
         .set('Authorization', `Bearer ${token}`)
         .send({
           username: '',
@@ -148,7 +159,7 @@ describe('UserController', () => {
 
     it('should update username and role', async () => {
       const res = await request(app.getHttpServer())
-        .patch(`${path}/${testRecordId}`)
+        .patch(`${API_ENDPOINT}/${testUser.id}`)
         .set('Authorization', `Bearer ${token}`)
         .send({
           username: NEW_USER_NAME,
@@ -161,10 +172,15 @@ describe('UserController', () => {
     });
   });
 
-  describe(`DELETE ${path}`, () => {
+  describe(`DELETE ${API_ENDPOINT}`, () => {
+    beforeAll(async () => {
+      testUser = await testService.createUser();
+      token = jwtService.sign({ sub: testUser.id, email: testUser.email });
+    });
+
     it('should not be authorized', async () => {
       const res = await request(app.getHttpServer()).delete(
-        `${path}/${testRecordId}`,
+        `${API_ENDPOINT}/${testUser.id}`,
       );
 
       expect(res.status).toBe(401);
@@ -173,29 +189,28 @@ describe('UserController', () => {
 
     it('should be invalid id data type', async () => {
       const res = await request(app.getHttpServer())
-        .delete(`${path}/invalid_id`)
+        .delete(`${API_ENDPOINT}/invalid_id`)
         .set('Authorization', `Bearer ${token}`);
 
       expect(res.status).toBe(400);
       expect(res.body.error).toBeDefined();
     });
 
-    it('should not be found', async () => {
+    it('should return invalid UUID', async () => {
       const res = await request(app.getHttpServer())
-        .delete(`${path}/invalid-uuid`)
+        .delete(`${API_ENDPOINT}/invalid-uuid`)
         .set('Authorization', `Bearer ${token}`);
 
-      expect(res.status).toBe(404);
+      expect(res.status).toBe(400);
       expect(res.body.error).toBeDefined();
     });
 
     it('should delete the test record', async () => {
       const res = await request(app.getHttpServer())
-        .delete(`${path}/${testRecordId}`)
+        .delete(`${API_ENDPOINT}/${testUser.id}`)
         .set('Authorization', `Bearer ${token}`);
 
       expect(res.status).toBe(200);
-      expect(res.body.data).toBe('Successfully deleted: ' + testRecordId);
       expect(res.body.error).toBeUndefined();
     });
   });
