@@ -4,10 +4,10 @@ import { PrismaService } from 'src/common/prisma.service';
 import { ValidationService } from 'src/common/validation.service';
 import { Logger } from 'winston';
 import {
-  AddRoomDto,
-  AddRoomResponse,
+  CreateRoomDto,
   GetAllRoomsResponse,
   UpdateRoomDto,
+  RoomEntity,
 } from './room.model';
 import { RoomValidation } from './room.validation';
 import { Prisma, Room } from '@prisma/client';
@@ -20,77 +20,61 @@ export class RoomService {
     private prismaService: PrismaService,
   ) {}
 
-  async add(dto: AddRoomDto): Promise<AddRoomResponse> {
-    this.logger.info(`RoomService.add(${JSON.stringify(dto)})`);
+  async create(dto: CreateRoomDto): Promise<RoomEntity> {
+    this.logger.info(`RoomService.create(${JSON.stringify(dto)})`);
 
-    const request = this.validationService.validate<AddRoomDto>(
+    const validatedReq = this.validationService.validate<CreateRoomDto>(
       RoomValidation.ADD,
       dto,
     );
 
-    const res = await this.prismaService.room.create({
-      data: request,
-    });
+    try {
+      const room = await this.prismaService.room.create({
+        data: validatedReq,
+      });
+      return room;
+    } catch (error) {
+      if (error.code === 'P2002') {
+        throw new HttpException(
+          `Ruangan dengan nama "${validatedReq.name}" sudah ada!`,
+          HttpStatus.BAD_REQUEST,
+        );
+      }
 
-    return res;
+      throw error;
+    }
   }
 
   async getAll(
-    page: string,
+    pageNumber?: number,
     search?: string,
     pageSize?: number,
   ): Promise<GetAllRoomsResponse> {
-    this.logger.info(`RoomService.getAll(page=${page}, search=${search})`);
+    this.logger.info(
+      `RoomService.getAll(page=${pageNumber}, search=${search}, pageSize=${pageSize})`,
+    );
 
-    let pageNumber = parseInt(page) || 1;
-
-    if (pageNumber == 0)
-      throw new HttpException('Invalid page data type', HttpStatus.BAD_REQUEST);
+    const offset = (pageNumber - 1) * pageSize;
 
     if (pageNumber < 1) pageNumber = 1;
 
-    const searchFilter = search
+    const whereClause: Prisma.RoomWhereInput | undefined = search
       ? {
           OR: [
             { name: { contains: search, mode: Prisma.QueryMode.insensitive } },
-            { unit: { contains: search, mode: Prisma.QueryMode.insensitive } },
           ],
         }
       : undefined;
 
-    if (!pageSize) {
-      const rooms = await this.prismaService.room.findMany({
-        where: searchFilter,
-        orderBy: {
-          name: 'asc',
-        },
-      });
-
-      return {
-        data: rooms,
-        meta: {
-          current_page: 1,
-          previous_page: null,
-          next_page: null,
-          total_page: 1,
-          total_data: rooms.length,
-        },
-      };
-    }
-
-    const offset = (pageNumber - 1) * pageSize;
-
-    const [rooms, totalData] = await Promise.all([
+    const [rooms, totalData] = await this.prismaService.$transaction([
       this.prismaService.room.findMany({
         skip: offset,
         take: pageSize,
-        where: searchFilter,
-        orderBy: {
-          name: 'asc',
-        },
+        where: whereClause,
+        orderBy: { name: 'asc' },
       }),
       this.prismaService.room.count({
-        where: searchFilter,
+        where: whereClause,
       }),
     ]);
 
@@ -110,16 +94,10 @@ export class RoomService {
     };
   }
 
-  async update(id: string, dto: UpdateRoomDto): Promise<Room> {
+  async update(id: number, dto: UpdateRoomDto): Promise<Room> {
     this.logger.info(
       `RoomService.update(id=${id}, dto=${JSON.stringify(dto)})`,
     );
-
-    const numericId = parseInt(id);
-
-    if (isNaN(numericId)) {
-      throw new HttpException('Invalid ID format', HttpStatus.BAD_REQUEST);
-    }
 
     const request = this.validationService.validate<UpdateRoomDto>(
       RoomValidation.UPDATE,
@@ -128,9 +106,7 @@ export class RoomService {
 
     try {
       const res = await this.prismaService.room.update({
-        where: {
-          id: numericId,
-        },
+        where: { id },
         data: request,
       });
 
@@ -142,25 +118,20 @@ export class RoomService {
           HttpStatus.NOT_FOUND,
         );
       }
+
       throw error;
     }
   }
 
-  async delete(id: string): Promise<string> {
+  async delete(id: number): Promise<string> {
     this.logger.info(`RoomService.delete(${id})`);
 
-    const numericId = parseInt(id);
-
-    if (isNaN(numericId)) {
-      throw new HttpException('Invalid ID format', HttpStatus.BAD_REQUEST);
-    }
-
     try {
-      await this.prismaService.room.delete({
-        where: {
-          id: numericId,
-        },
+      const room = await this.prismaService.room.delete({
+        where: { id },
       });
+
+      return `Berhasil menghapus ruangan ${room.name}`;
     } catch (error) {
       if (error.code === 'P2025') {
         throw new HttpException(
@@ -168,9 +139,8 @@ export class RoomService {
           HttpStatus.NOT_FOUND,
         );
       }
+
       throw error;
     }
-
-    return `Successfully deleted: ${id}`;
   }
 }

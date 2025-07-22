@@ -1,23 +1,18 @@
+import { PartialType, PickType } from '@nestjs/mapped-types';
 import { ResponseMeta } from 'src/common/api.model';
 
-class Room {
+export class RoomEntity {
   id: number;
   name: string;
   created_at: Date;
   updated_at: Date;
 }
 
-export class AddRoomDto {
-  name: string;
-}
+export class CreateRoomDto extends PickType(RoomEntity, ['name']) {}
 
-export class AddRoomResponse extends Room {}
+export class UpdateRoomDto extends PartialType(CreateRoomDto) {}
 
 export class GetAllRoomsResponse {
-  data: Room[];
+  data: RoomEntity[];
   meta: ResponseMeta;
-}
-
-export class UpdateRoomDto {
-  name?: string;
 }

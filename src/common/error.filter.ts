@@ -1,33 +1,58 @@
 import {
-  ArgumentsHost,
-  Catch,
   ExceptionFilter,
+  Catch,
+  ArgumentsHost,
   HttpException,
   HttpStatus,
+  Logger, // 👈 Import Logger
 } from '@nestjs/common';
 import { ZodError } from 'zod';
 
-@Catch(ZodError, HttpException)
+@Catch()
 export class ErrorFilter implements ExceptionFilter {
+  // ✅ Instantiate a logger for this filter's context
+  private readonly logger = new Logger(ErrorFilter.name);
+
   catch(exception: any, host: ArgumentsHost) {
-    const response = host.switchToHttp().getResponse();
+    const ctx = host.switchToHttp();
+    const response = ctx.getResponse();
+    const request = ctx.getRequest();
+
+    let status: number;
+    let message: string;
 
     if (exception instanceof HttpException) {
-      response.status(exception.getStatus()).json({
-        error: exception.getResponse(),
-      });
+      status = exception.getStatus();
+      const exceptionResponse = exception.getResponse();
+      message =
+        typeof exceptionResponse === 'string'
+          ? exceptionResponse
+          : (exceptionResponse as any).message;
+
+      this.logger.error(
+        `[${request.method} ${request.url}] - Status: ${status} - Message: ${message}`,
+      );
     } else if (exception instanceof ZodError) {
-      const error = exception.errors
+      status = HttpStatus.BAD_REQUEST;
+      message = exception.errors
         .map((err) => `${err.path.join('.')}: ${err.message}`)
         .join(', ');
 
-      response.status(HttpStatus.BAD_REQUEST).json({
-        error,
-      });
+      this.logger.error(
+        `[${request.method} ${request.url}] - Validation Error - Status: ${status} - Message: ${message}`,
+      );
     } else {
-      response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
-        error: exception.message,
-      });
+      status = HttpStatus.INTERNAL_SERVER_ERROR;
+      message = 'An internal server error occurred';
+
+      this.logger.error(
+        `[${request.method} ${request.url}] - Unhandled Exception - Status: ${status}`,
+        exception.stack, // Include the stack trace for debugging
+      );
     }
+
+    response.status(status).json({
+      error: message,
+    });
   }
 }

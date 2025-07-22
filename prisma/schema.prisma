@@ -55,7 +55,7 @@ model Drug {
 
 model Room {
   id          Int           @id @default(autoincrement())
-  name        String        @db.VarChar(100)
+  name        String        @unique @db.VarChar(100)
   created_at  DateTime      @default(now())
   updated_at  DateTime      @updatedAt
   CareSession CareSession[]

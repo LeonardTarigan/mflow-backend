@@ -1,19 +1,20 @@
 import {
   Body,
   Controller,
+  DefaultValuePipe,
   Delete,
   Get,
   HttpCode,
   HttpStatus,
   Param,
+  ParseIntPipe,
   Patch,
   Post,
   Query,
 } from '@nestjs/common';
-import { RoomService } from './room.service';
-import { AddRoomDto, AddRoomResponse, UpdateRoomDto } from './room.model';
 import { ApiResponse } from 'src/common/api.model';
-import { Room } from '@prisma/client';
+import { CreateRoomDto, RoomEntity, UpdateRoomDto } from './room.model';
+import { RoomService } from './room.service';
 
 @Controller('/api/rooms')
 export class RoomController {
@@ -21,8 +22,8 @@ export class RoomController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  async add(@Body() dto: AddRoomDto): Promise<ApiResponse<AddRoomResponse>> {
-    const res = await this.roomService.add(dto);
+  async add(@Body() dto: CreateRoomDto): Promise<ApiResponse<RoomEntity>> {
+    const res = await this.roomService.create(dto);
 
     return { data: res };
   }
@@ -30,16 +31,14 @@ export class RoomController {
   @Get()
   @HttpCode(HttpStatus.OK)
   async getAll(
-    @Query('page') page: string,
     @Query('search') search: string,
-    @Query('pageSize') pageSize: string,
-  ): Promise<ApiResponse<Room[]>> {
-    const parsedPageSize = pageSize ? parseInt(pageSize, 10) : undefined;
-
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('pageSize', new DefaultValuePipe(10), ParseIntPipe) pageSize: number,
+  ): Promise<ApiResponse<RoomEntity[]>> {
     const { data, meta } = await this.roomService.getAll(
       page,
       search,
-      parsedPageSize,
+      pageSize,
     );
 
     return {
@@ -51,9 +50,9 @@ export class RoomController {
   @Patch('/:id')
   @HttpCode(HttpStatus.OK)
   async update(
-    @Param('id') id: string,
+    @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateRoomDto,
-  ): Promise<ApiResponse<Room>> {
+  ): Promise<ApiResponse<RoomEntity>> {
     const res = await this.roomService.update(id, dto);
 
     return {
@@ -63,7 +62,9 @@ export class RoomController {
 
   @Delete('/:id')
   @HttpCode(HttpStatus.OK)
-  async delete(@Param('id') id: string): Promise<ApiResponse<string>> {
+  async delete(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<ApiResponse<string>> {
     const res = await this.roomService.delete(id);
 
     return {
