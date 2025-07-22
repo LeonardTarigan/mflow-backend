@@ -26,10 +26,6 @@ export class UserTestService {
   }
 
   async deleteTestUser(id: string): Promise<void> {
-    if (!this.prismaService?.user) {
-      throw new Error('User model is undefined in PrismaService.');
-    }
-
     await this.prismaService.user.delete({
       where: {
         id,

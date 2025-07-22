@@ -34,32 +34,35 @@ export class ErrorFilter implements ExceptionFilter {
         message = exceptionResponse as string;
       }
 
-      this.logger.error(
-        `[${request.method} ${request.url}] - Status: ${status} - Message: ${message}`,
-      );
+      if (process.env.NODE_ENV !== 'test')
+        this.logger.error(
+          `[${request.method} ${request.url}] - Status: ${status} - Message: ${message}`,
+        );
     } else if (exception instanceof ZodError) {
       status = HttpStatus.BAD_REQUEST;
       message = exception.errors
         .map((err) => `${err.path.join('.')}: ${err.message}`)
         .join(', ');
 
-      this.logger.error(
-        `[${request.method} ${request.url}] - Validation Error - Status: ${status} - Message: ${message}`,
-      );
+      if (process.env.NODE_ENV !== 'test')
+        this.logger.error(
+          `[${request.method} ${request.url}] - Validation Error - Status: ${status} - Message: ${message}`,
+        );
     } else {
       status = HttpStatus.INTERNAL_SERVER_ERROR;
       message = 'An internal server error occurred';
-
-      if (exception instanceof Error) {
-        this.logger.error(
-          `[${request.method} ${request.url}] - Unhandled Exception`,
-          exception.stack,
-        );
-      } else {
-        this.logger.error(
-          `[${request.method} ${request.url}] - Unhandled Exception`,
-          exception,
-        );
+      if (process.env.NODE_ENV !== 'test') {
+        if (exception instanceof Error) {
+          this.logger.error(
+            `[${request.method} ${request.url}] - Unhandled Exception`,
+            exception.stack,
+          );
+        } else {
+          this.logger.error(
+            `[${request.method} ${request.url}] - Unhandled Exception`,
+            exception,
+          );
+        }
       }
     }
 

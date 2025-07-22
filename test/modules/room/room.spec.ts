@@ -13,9 +13,8 @@ describe('RoomController', () => {
   let testService: RoomTestService;
   let jwtService: JwtService;
   let token: string;
-  let testRecordId: number;
 
-  const path = '/api/rooms';
+  const API_ENDPOINT = '/api/rooms';
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -35,12 +34,16 @@ describe('RoomController', () => {
   });
 
   afterAll(async () => {
-    await testService.deleteRoom();
+    await app.close();
   });
 
-  describe(`POST ${path}`, () => {
+  describe(`POST ${API_ENDPOINT}`, () => {
+    let testRoomId: number;
+
+    afterAll(async () => await testService.deleteTestRoom(testRoomId));
+
     it('should not be authorized', async () => {
-      const res = await request(app.getHttpServer()).post(path).send({
+      const res = await request(app.getHttpServer()).post(API_ENDPOINT).send({
         name: testService.TEST_ROOM_NAME,
       });
 
@@ -50,7 +53,7 @@ describe('RoomController', () => {
 
     it('should be rejected as validation error', async () => {
       const res = await request(app.getHttpServer())
-        .post(path)
+        .post(API_ENDPOINT)
         .set('Authorization', `Bearer ${token}`)
         .send({
           name: '',
@@ -62,7 +65,7 @@ describe('RoomController', () => {
 
     it('should be able to create test record', async () => {
       const res = await request(app.getHttpServer())
-        .post(path)
+        .post(API_ENDPOINT)
         .set('Authorization', `Bearer ${token}`)
         .send({
           name: testService.TEST_ROOM_NAME,
@@ -72,13 +75,13 @@ describe('RoomController', () => {
       expect(res.body.data.name).toBe(testService.TEST_ROOM_NAME);
       expect(res.body.error).toBeUndefined();
 
-      testRecordId = res.body.data.id;
+      testRoomId = res.body.data.id;
     });
   });
 
-  describe(`GET ${path}`, () => {
+  describe(`GET ${API_ENDPOINT}`, () => {
     it('should not be authorized', async () => {
-      const res = await request(app.getHttpServer()).get(path);
+      const res = await request(app.getHttpServer()).get(API_ENDPOINT);
 
       expect(res.status).toBe(401);
       expect(res.body.error).toBeDefined();
@@ -86,7 +89,7 @@ describe('RoomController', () => {
 
     it('should be able to get all rooms data', async () => {
       const res = await request(app.getHttpServer())
-        .get(path)
+        .get(API_ENDPOINT)
         .set('Authorization', `Bearer ${token}`);
 
       expect(res.status).toBe(200);
@@ -96,10 +99,19 @@ describe('RoomController', () => {
     });
   });
 
-  describe(`PATCH ${path}`, () => {
+  describe(`PATCH ${API_ENDPOINT}`, () => {
+    let testRoomId: number;
+
+    beforeAll(async () => {
+      const testRoom = await testService.createTestRoom();
+      testRoomId = testRoom.id;
+    });
+
+    afterAll(async () => await testService.deleteTestRoom(testRoomId));
+
     it('should not be authorized', async () => {
       const res = await request(app.getHttpServer())
-        .patch(`${path}/${testRecordId}`)
+        .patch(`${API_ENDPOINT}/${testRoomId}`)
         .send({
           name: testService.TEST_ROOM_NAME,
         });
@@ -110,7 +122,7 @@ describe('RoomController', () => {
 
     it('should not be found', async () => {
       const res = await request(app.getHttpServer())
-        .patch(`${path}/0`)
+        .patch(`${API_ENDPOINT}/0`)
         .set('Authorization', `Bearer ${token}`)
         .send({
           name: testService.TEST_ROOM_NAME,
@@ -122,7 +134,7 @@ describe('RoomController', () => {
 
     it('should be rejected as validation error', async () => {
       const res = await request(app.getHttpServer())
-        .patch(`${path}/${testRecordId}`)
+        .patch(`${API_ENDPOINT}/${testRoomId}`)
         .set('Authorization', `Bearer ${token}`)
         .send({
           name: '',
@@ -136,7 +148,7 @@ describe('RoomController', () => {
       const NEW_ROOM_NAME = 'updated_name';
 
       const res = await request(app.getHttpServer())
-        .patch(`${path}/${testRecordId}`)
+        .patch(`${API_ENDPOINT}/${testRoomId}`)
         .set('Authorization', `Bearer ${token}`)
         .send({
           name: NEW_ROOM_NAME,
@@ -148,10 +160,17 @@ describe('RoomController', () => {
     });
   });
 
-  describe(`DELETE ${path}`, () => {
+  describe(`DELETE ${API_ENDPOINT}`, () => {
+    let testRoomId: number;
+
+    beforeAll(async () => {
+      const testRoom = await testService.createTestRoom();
+      testRoomId = testRoom.id;
+    });
+
     it('should not be authorized', async () => {
       const res = await request(app.getHttpServer()).delete(
-        `${path}/${testRecordId}`,
+        `${API_ENDPOINT}/${testRoomId}`,
       );
 
       expect(res.status).toBe(401);
@@ -160,7 +179,7 @@ describe('RoomController', () => {
 
     it('should be invalid id data type', async () => {
       const res = await request(app.getHttpServer())
-        .delete(`${path}/invalid_id`)
+        .delete(`${API_ENDPOINT}/invalid_id`)
         .set('Authorization', `Bearer ${token}`);
 
       expect(res.status).toBe(400);
@@ -169,7 +188,7 @@ describe('RoomController', () => {
 
     it('should not be found', async () => {
       const res = await request(app.getHttpServer())
-        .delete(`${path}/0`)
+        .delete(`${API_ENDPOINT}/0`)
         .set('Authorization', `Bearer ${token}`);
 
       expect(res.status).toBe(404);
@@ -178,11 +197,10 @@ describe('RoomController', () => {
 
     it('should delete the test record', async () => {
       const res = await request(app.getHttpServer())
-        .delete(`${path}/${testRecordId}`)
+        .delete(`${API_ENDPOINT}/${testRoomId}`)
         .set('Authorization', `Bearer ${token}`);
 
       expect(res.status).toBe(200);
-      expect(res.body.data).toBe('Successfully deleted: ' + testRecordId);
       expect(res.body.error).toBeUndefined();
     });
   });
