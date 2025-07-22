@@ -13,7 +13,7 @@ export class UserTestService {
   readonly TEST_USER_ROLE = 'ADMIN';
   readonly TEST_USER_PASSWORD = 'testing_password';
 
-  async createUser(): Promise<UserEntity> {
+  async createTestUser(): Promise<UserEntity> {
     const user = await this.prismaService.user.create({
       data: {
         username: this.TEST_USER_NAME,
@@ -26,7 +26,7 @@ export class UserTestService {
     return user;
   }
 
-  async deleteUser(id: string): Promise<void> {
+  async deleteTestUser(id: string): Promise<void> {
     if (!this.prismaService?.user) {
       throw new Error('User model is undefined in PrismaService.');
     }

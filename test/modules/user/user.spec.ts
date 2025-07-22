@@ -11,8 +11,6 @@ describe('UserController', () => {
   let app: INestApplication;
   let testService: UserTestService;
   let jwtService: JwtService;
-  let token: string;
-  let testUser: UserEntity;
 
   const API_ENDPOINT = '/api/users';
 
@@ -26,11 +24,6 @@ describe('UserController', () => {
 
     testService = app.get(UserTestService);
     jwtService = app.get(JwtService);
-
-    token = jwtService.sign({
-      sub: testService.TEST_USER_ID,
-      email: testService.TEST_USER_EMAIL,
-    });
   });
 
   afterAll(async () => {
@@ -38,7 +31,17 @@ describe('UserController', () => {
   });
 
   describe(`POST ${API_ENDPOINT}`, () => {
-    afterAll(async () => await testService.deleteUser(testUser.id));
+    let token: string;
+    let testUser: UserEntity;
+
+    beforeAll(async () => {
+      token = jwtService.sign({
+        sub: testService.TEST_USER_ID,
+        email: testService.TEST_USER_EMAIL,
+      });
+    });
+
+    afterAll(async () => await testService.deleteTestUser(testUser.id));
 
     it('should not be authorized', async () => {
       const res = await request(app.getHttpServer()).post(API_ENDPOINT).send({
@@ -87,6 +90,15 @@ describe('UserController', () => {
   });
 
   describe(`GET ${API_ENDPOINT}`, () => {
+    let token: string;
+
+    beforeAll(async () => {
+      token = jwtService.sign({
+        sub: testService.TEST_USER_ID,
+        email: testService.TEST_USER_EMAIL,
+      });
+    });
+
     it('should not be authorized', async () => {
       const res = await request(app.getHttpServer()).get(API_ENDPOINT);
 
@@ -110,13 +122,16 @@ describe('UserController', () => {
     const NEW_USER_NAME = 'updated_name';
     const NEW_USER_ROLE = 'ADMIN';
 
+    let token: string;
+    let testUser: UserEntity;
+
     beforeAll(async () => {
-      testUser = await testService.createUser();
+      testUser = await testService.createTestUser();
       token = jwtService.sign({ sub: testUser.id, email: testUser.email });
     });
 
     afterAll(async () => {
-      await testService.deleteUser(testUser.id);
+      await testService.deleteTestUser(testUser.id);
     });
 
     it('should not be authorized', async () => {
@@ -173,8 +188,11 @@ describe('UserController', () => {
   });
 
   describe(`DELETE ${API_ENDPOINT}`, () => {
+    let token: string;
+    let testUser: UserEntity;
+
     beforeAll(async () => {
-      testUser = await testService.createUser();
+      testUser = await testService.createTestUser();
       token = jwtService.sign({ sub: testUser.id, email: testUser.email });
     });
 
