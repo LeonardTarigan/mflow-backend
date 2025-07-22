@@ -7,7 +7,6 @@ import { UserEntity } from 'src/user/user.model';
 export class UserTestService {
   constructor(private prismaService: PrismaService) {}
 
-  readonly TEST_USER_ID = 'testing_id';
   readonly TEST_USER_NAME = 'testing_name';
   readonly TEST_USER_EMAIL = 'test@mail.com';
   readonly TEST_USER_ROLE = 'ADMIN';

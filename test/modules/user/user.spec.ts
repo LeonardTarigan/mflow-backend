@@ -6,6 +6,7 @@ import { AppModule } from '../../../src/app.module';
 import { JwtService } from '@nestjs/jwt';
 import { UserTestService } from './user.spec.service';
 import { UserEntity } from 'src/user/user.model';
+import { randomUUID } from 'crypto';
 
 describe('UserController', () => {
   let app: INestApplication;
@@ -36,7 +37,7 @@ describe('UserController', () => {
 
     beforeAll(async () => {
       token = jwtService.sign({
-        sub: testService.TEST_USER_ID,
+        sub: randomUUID(),
         email: testService.TEST_USER_EMAIL,
       });
     });
@@ -94,7 +95,7 @@ describe('UserController', () => {
 
     beforeAll(async () => {
       token = jwtService.sign({
-        sub: testService.TEST_USER_ID,
+        sub: randomUUID(),
         email: testService.TEST_USER_EMAIL,
       });
     });
