@@ -1,15 +1,17 @@
-import { MailerModule } from '@nestjs-modules/mailer';
-import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
+import { join } from 'path';
+
 import { Global, Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_FILTER } from '@nestjs/core';
+import { EventEmitterModule } from '@nestjs/event-emitter';
+import { MailerModule } from '@nestjs-modules/mailer';
+import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
 import { WinstonModule } from 'nest-winston';
-import { join } from 'path';
 import * as winston from 'winston';
+
 import { ErrorFilter } from './error.filter';
 import { PrismaService } from './prisma.service';
 import { ValidationService } from './validation.service';
-import { EventEmitterModule } from '@nestjs/event-emitter';
 
 @Global()
 @Module({

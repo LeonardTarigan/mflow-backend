@@ -1,12 +1,15 @@
+import { randomUUID } from 'crypto';
+
 import { INestApplication } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
+import { UserEntity } from 'src/user/user.model';
 import * as request from 'supertest';
 import { TestModule } from 'test/test.module';
+
 import { AppModule } from '../../../src/app.module';
-import { JwtService } from '@nestjs/jwt';
+
 import { UserTestService } from './user.spec.service';
-import { UserEntity } from 'src/user/user.model';
-import { randomUUID } from 'crypto';
 
 describe('UserController', () => {
   let app: INestApplication;

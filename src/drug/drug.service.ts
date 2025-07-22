@@ -1,8 +1,10 @@
 import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { PrismaService } from 'src/common/prisma.service';
 import { ValidationService } from 'src/common/validation.service';
 import { Logger } from 'winston';
+
 import {
   AddDrugDto,
   AddDrugResponse,
@@ -11,7 +13,6 @@ import {
   UpdateDrugDto,
 } from './drug.model';
 import { DrugValidation } from './drug.validation';
-import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class DrugService {

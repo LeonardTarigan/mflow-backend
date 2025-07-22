@@ -1,10 +1,12 @@
 import { INestApplication } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
 import * as request from 'supertest';
 import { TestModule } from 'test/test.module';
+
 import { AppModule } from '../../../src/app.module';
+
 import { DrugTestService } from './drug.spec.service';
-import { JwtService } from '@nestjs/jwt';
 
 describe('DrugController', () => {
   let app: INestApplication;

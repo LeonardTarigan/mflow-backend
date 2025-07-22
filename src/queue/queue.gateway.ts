@@ -1,18 +1,19 @@
+import { Inject } from '@nestjs/common';
 import {
-  WebSocketGateway,
-  WebSocketServer,
+  ConnectedSocket,
+  MessageBody,
   OnGatewayConnection,
   OnGatewayDisconnect,
   SubscribeMessage,
-  MessageBody,
-  ConnectedSocket,
+  WebSocketGateway,
+  WebSocketServer,
 } from '@nestjs/websockets';
-import { Server } from 'socket.io';
-import { Logger } from 'winston';
-import { Inject } from '@nestjs/common';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
+import { Server, Socket } from 'socket.io';
+import { Logger } from 'winston';
+
 import { CalledQueue, WaitingQueueDetail } from './queue.model';
-import { Socket } from 'socket.io';
+
 @WebSocketGateway({
   cors: {
     origin: '*',

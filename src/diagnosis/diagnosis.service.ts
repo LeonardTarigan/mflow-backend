@@ -3,7 +3,7 @@ import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { PrismaService } from 'src/common/prisma.service';
 import { ValidationService } from 'src/common/validation.service';
 import { Logger } from 'winston';
-import { DiagnosisValidation } from './diagnosis.validation';
+
 import {
   AddDiagnosisDto,
   AddDiagnosisResponse,
@@ -11,6 +11,7 @@ import {
   AddSessionDiagnosisResponse,
   GetAllDiagnosesResponse,
 } from './diagnosis.model';
+import { DiagnosisValidation } from './diagnosis.validation';
 
 @Injectable()
 export class DiagnosisService {

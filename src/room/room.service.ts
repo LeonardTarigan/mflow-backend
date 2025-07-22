@@ -1,16 +1,17 @@
 import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
+import { Prisma, Room } from '@prisma/client';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { PrismaService } from 'src/common/prisma.service';
 import { ValidationService } from 'src/common/validation.service';
 import { Logger } from 'winston';
+
 import {
   CreateRoomDto,
   GetAllRoomsResponse,
-  UpdateRoomDto,
   RoomEntity,
+  UpdateRoomDto,
 } from './room.model';
 import { RoomValidation } from './room.validation';
-import { Prisma, Room } from '@prisma/client';
 
 @Injectable()
 export class RoomService {

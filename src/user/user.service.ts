@@ -1,12 +1,14 @@
+import { randomInt } from 'crypto';
+
 import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Prisma } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
-import { randomInt } from 'crypto';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { PrismaService } from 'src/common/prisma.service';
 import { ValidationService } from 'src/common/validation.service';
 import { Logger } from 'winston';
+
 import {
   CreateUserDto,
   CreateUserResponse,

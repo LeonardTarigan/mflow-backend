@@ -3,8 +3,9 @@ import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { PrismaService } from 'src/common/prisma.service';
 import { ValidationService } from 'src/common/validation.service';
 import { Logger } from 'winston';
-import { DrugOrderValidation } from './drug-order.validation';
+
 import { AddDrugOrderDto, AddDrugOrderResponse } from './drug-order.model';
+import { DrugOrderValidation } from './drug-order.validation';
 
 @Injectable()
 export class DrugOrderService {

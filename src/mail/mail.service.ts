@@ -1,5 +1,5 @@
-import { MailerService } from '@nestjs-modules/mailer';
 import { Inject, Injectable } from '@nestjs/common';
+import { MailerService } from '@nestjs-modules/mailer';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { UserEntity } from 'src/user/user.model';
 import { Logger } from 'winston';
@@ -11,7 +11,10 @@ export class MailService {
     private readonly mailerService: MailerService,
   ) {}
 
-  async sendWelcomeEmail(user: UserEntity, plainTextPass: string) {
+  async sendWelcomeEmail(
+    user: UserEntity,
+    plainTextPass: string,
+  ): Promise<void> {
     this.logger.info(`Sending welcome email to ${user.email}`);
 
     try {

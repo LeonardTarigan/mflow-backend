@@ -10,6 +10,7 @@ import {
   Query,
 } from '@nestjs/common';
 import { ApiResponse } from 'src/common/api.model';
+
 import {
   AddQueueDto,
   AddQueueResponse,

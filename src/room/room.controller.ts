@@ -13,6 +13,7 @@ import {
   Query,
 } from '@nestjs/common';
 import { ApiResponse } from 'src/common/api.model';
+
 import { CreateRoomDto, RoomEntity, UpdateRoomDto } from './room.model';
 import { RoomService } from './room.service';
 

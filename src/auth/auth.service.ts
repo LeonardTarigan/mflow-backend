@@ -6,6 +6,7 @@ import { AuthLoginDto, AuthLoginResponse } from 'src/auth/auth.model';
 import { ValidationService } from 'src/common/validation.service';
 import { UserService } from 'src/user/user.service';
 import { Logger } from 'winston';
+
 import { AuthValidation } from './auth.validation';
 
 @Injectable()

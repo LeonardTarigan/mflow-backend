@@ -10,15 +10,16 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import { TreatmentService } from './treatment.service';
+import { Treatment } from '@prisma/client';
+import { ApiResponse } from 'src/common/api.model';
+
 import {
   AddSessionTreatmentDto,
   AddSessionTreatmentResponse,
   AddTreatmentDto,
   UpdateTreatmentDto,
 } from './treatment.model';
-import { ApiResponse } from 'src/common/api.model';
-import { Treatment } from '@prisma/client';
+import { TreatmentService } from './treatment.service';
 
 @Controller('/api/treatments')
 export class TreatmentController {

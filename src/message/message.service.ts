@@ -3,6 +3,7 @@ import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { TDocumentDefinitions } from 'pdfmake/interfaces';
 import { ValidationService } from 'src/common/validation.service';
 import { Logger } from 'winston';
+
 import { GenerateMedicalCardDto } from './message.model';
 import { MessageValidation } from './message.validation';
 
@@ -43,7 +44,7 @@ export class MessageService {
       headers: {
         Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
       },
-      body: formData as any,
+      body: formData,
     });
 
     const data = await res.json();
@@ -160,7 +161,7 @@ export class MessageService {
     });
   }
 
-  async sendMedicalCardMessage(dto: GenerateMedicalCardDto) {
+  async sendMedicalCardMessage(dto: GenerateMedicalCardDto): Promise<void> {
     try {
       const buffer = await this.generateMedicalCardBuffer(dto);
       const mediaId = await this.uploadToWhatsapp(buffer);

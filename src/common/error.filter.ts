@@ -4,16 +4,15 @@ import {
   ArgumentsHost,
   HttpException,
   HttpStatus,
-  Logger, // 👈 Import Logger
+  Logger,
 } from '@nestjs/common';
 import { ZodError } from 'zod';
 
 @Catch()
 export class ErrorFilter implements ExceptionFilter {
-  // ✅ Instantiate a logger for this filter's context
   private readonly logger = new Logger(ErrorFilter.name);
 
-  catch(exception: any, host: ArgumentsHost) {
+  catch(exception: unknown, host: ArgumentsHost): void {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse();
     const request = ctx.getRequest();
@@ -24,10 +23,16 @@ export class ErrorFilter implements ExceptionFilter {
     if (exception instanceof HttpException) {
       status = exception.getStatus();
       const exceptionResponse = exception.getResponse();
-      message =
-        typeof exceptionResponse === 'string'
-          ? exceptionResponse
-          : (exceptionResponse as any).message;
+
+      if (
+        typeof exceptionResponse === 'object' &&
+        exceptionResponse !== null &&
+        'message' in exceptionResponse
+      ) {
+        message = (exceptionResponse as { message: string }).message;
+      } else {
+        message = exceptionResponse as string;
+      }
 
       this.logger.error(
         `[${request.method} ${request.url}] - Status: ${status} - Message: ${message}`,
@@ -45,10 +50,17 @@ export class ErrorFilter implements ExceptionFilter {
       status = HttpStatus.INTERNAL_SERVER_ERROR;
       message = 'An internal server error occurred';
 
-      this.logger.error(
-        `[${request.method} ${request.url}] - Unhandled Exception - Status: ${status}`,
-        exception.stack, // Include the stack trace for debugging
-      );
+      if (exception instanceof Error) {
+        this.logger.error(
+          `[${request.method} ${request.url}] - Unhandled Exception`,
+          exception.stack,
+        );
+      } else {
+        this.logger.error(
+          `[${request.method} ${request.url}] - Unhandled Exception`,
+          exception,
+        );
+      }
     }
 
     response.status(status).json({

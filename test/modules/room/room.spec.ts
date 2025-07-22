@@ -1,9 +1,11 @@
 import { INestApplication } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
 import * as request from 'supertest';
 import { TestModule } from 'test/test.module';
+
 import { AppModule } from '../../../src/app.module';
-import { JwtService } from '@nestjs/jwt';
+
 import { RoomTestService } from './room.spec.service';
 
 describe('RoomController', () => {

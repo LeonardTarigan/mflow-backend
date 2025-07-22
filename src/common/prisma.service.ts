@@ -33,7 +33,7 @@ export class PrismaService
     });
   }
 
-  onModuleInit() {
+  onModuleInit(): void {
     this.$on('info', (e) => this.logger.info(e));
     this.$on('warn', (e) => this.logger.warn(e));
     this.$on('error', (e) => this.logger.error(e));
