@@ -1,35 +1,32 @@
+import { OmitType, PartialType, PickType } from '@nestjs/mapped-types';
 import { UserRole } from '@prisma/client';
 import { ResponseMeta } from 'src/common/api.model';
 
-class BaseUser {
+export class UserEntity {
+  id: string;
   username: string;
   email: string;
   role: UserRole;
-}
-
-export class AddUserDto extends BaseUser {}
-
-export class AddUserRequest extends BaseUser {
-  id: string;
   password: string;
 }
 
-export class UserDetail extends BaseUser {
-  id: string;
-  password?: string;
+export class CreateUserDto extends OmitType(UserEntity, ['id']) {}
+
+export class UpdateUserDto extends PartialType(
+  PickType(UserEntity, ['username', 'role']),
+) {}
+
+export class UserResponseDto extends OmitType(UserEntity, ['password']) {}
+
+export class CreateUserResponse {
+  user: UserResponseDto;
 }
 
-export class AddUserResponse {
-  user: UserDetail;
-  token?: string;
+export class GetUserResponse {
+  user: UserResponseDto;
 }
 
-export class GetAllUserResponse {
-  data: UserDetail[];
+export class GetAllUsersResponse {
+  data: UserResponseDto[];
   meta: ResponseMeta;
-}
-
-export class UpdateUserDto {
-  username?: string;
-  role?: UserRole;
 }

@@ -1,4 +1,4 @@
-import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
+import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
@@ -25,9 +25,13 @@ export class AuthService {
       dto,
     );
 
-    const user = await this.userService.getByEmail(validatedReq.email);
+    const user = await this.userService.getFullDataByEmail(validatedReq.email);
 
-    if (!user) throw new UnauthorizedException('Email atau password salah!');
+    if (!user)
+      throw new HttpException(
+        'Email atau password salah!',
+        HttpStatus.UNAUTHORIZED,
+      );
 
     const isPasswordValid = await bcrypt?.compare(
       validatedReq.password,
@@ -35,7 +39,10 @@ export class AuthService {
     );
 
     if (!isPasswordValid)
-      throw new UnauthorizedException('Email atau password salah!');
+      throw new HttpException(
+        'Email atau password salah!',
+        HttpStatus.UNAUTHORIZED,
+      );
 
     const accessToken = await this.jwtService.signAsync({
       sub: user.id,

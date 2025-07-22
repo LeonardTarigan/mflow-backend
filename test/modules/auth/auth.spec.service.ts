@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from 'src/common/prisma.service';
-import { UserDetail } from 'src/user/user.model';
+import { UserEntity } from 'src/user/user.model';
 
 @Injectable()
 export class AuthTestService {
@@ -24,7 +24,7 @@ export class AuthTestService {
     });
   }
 
-  async createUser(): Promise<UserDetail> {
+  async createUser(): Promise<UserEntity> {
     const user = await this.prismaService.user.create({
       data: {
         username: this.TEST_USER_NAME,

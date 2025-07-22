@@ -9,6 +9,7 @@ import * as winston from 'winston';
 import { ErrorFilter } from './error.filter';
 import { PrismaService } from './prisma.service';
 import { ValidationService } from './validation.service';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 
 @Global()
 @Module({
@@ -68,6 +69,9 @@ import { ValidationService } from './validation.service';
           },
         },
       }),
+    }),
+    EventEmitterModule.forRoot({
+      global: true,
     }),
   ],
   providers: [

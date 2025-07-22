@@ -1,17 +1,19 @@
-import { MailerService } from '@nestjs-modules/mailer';
 import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Prisma } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
+import { randomInt } from 'crypto';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { PrismaService } from 'src/common/prisma.service';
 import { ValidationService } from 'src/common/validation.service';
 import { Logger } from 'winston';
 import {
-  AddUserDto,
-  AddUserResponse,
-  GetAllUserResponse,
+  CreateUserDto,
+  CreateUserResponse,
+  GetAllUsersResponse,
   UpdateUserDto,
-  UserDetail,
+  UserEntity,
+  UserResponseDto,
 } from './user.model';
 import { UserValidation } from './user.validation';
 
@@ -21,10 +23,19 @@ export class UserService {
     private validationService: ValidationService,
     @Inject(WINSTON_MODULE_PROVIDER) private logger: Logger,
     private prismaService: PrismaService,
-    private readonly mailerService: MailerService,
+    private eventEmitter: EventEmitter2,
   ) {}
 
-  generatePassword(name: string, role: string): string {
+  private removeResponsePassword(user: UserEntity): UserResponseDto {
+    return {
+      id: user.id,
+      email: user.email,
+      username: user.username,
+      role: user.role,
+    };
+  }
+
+  private generatePassword(name: string, role: string): string {
     const roleMap = {
       ADMIN: 'ADM',
       DOKTER: 'DCT',
@@ -36,88 +47,66 @@ export class UserService {
 
     const cleanedName = name.replace(/^(drg?)\.?\s*/i, '').trim();
     const namePart = cleanedName.slice(0, 4).toLowerCase();
-    const randomNum = Math.floor(10000 + Math.random() * 90000);
+    const randomNum = randomInt(10000, 99999);
 
     return `${namePart}.${roleCode}#${randomNum}`;
   }
 
-  async add(dto: AddUserDto): Promise<AddUserResponse> {
+  async create(dto: CreateUserDto): Promise<CreateUserResponse> {
     this.logger.info(`UserService.add(${JSON.stringify(dto)})`);
 
-    const addUserRequest = this.validationService.validate<AddUserDto>(
+    const validatedReq = this.validationService.validate<CreateUserDto>(
       UserValidation.ADD,
       dto,
     );
 
     const generatedPassword = this.generatePassword(dto.username, dto.role);
 
-    const totalWithSameEmail = await this.prismaService.user.count({
-      where: {
-        email: dto.email,
-      },
-    });
-
-    if (totalWithSameEmail != 0) {
-      throw new HttpException(
-        `Email ${dto.email} sudah terdaftar!`,
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-
     const hashedPassword = await bcrypt.hash(generatedPassword, 10);
 
-    const user = await this.prismaService.user.create({
-      data: {
-        password: hashedPassword,
-        ...addUserRequest,
-      },
-    });
+    let user: UserEntity;
 
     try {
-      await Promise.race([
-        this.mailerService.sendMail({
-          to: user.email,
-          subject: 'Informasi Akun MFlow Anda',
-          template: 'user-welcome',
-          context: {
-            username: user.username,
-            password: generatedPassword,
-          },
-        }),
-        new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Email Timeout')), 5000),
-        ),
-      ]);
-      this.logger.info('Email sent successfully');
+      user = await this.prismaService.user.create({
+        data: {
+          password: hashedPassword,
+          ...validatedReq,
+        },
+      });
+
+      this.eventEmitter.emit('user.created', { user, generatedPassword });
     } catch (error) {
-      this.logger.error(`Mailer error: ${error.message}`);
+      if (error.code === 'P2002') {
+        throw new HttpException(
+          `Email ${validatedReq.email} sudah terdaftar!`,
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      throw error;
     }
 
     return {
-      user: {
-        id: user.id,
-        username: user.username,
-        email: user.email,
-        role: user.role,
-      },
+      user: this.removeResponsePassword(user),
     };
   }
 
   async getAll(
-    page: string,
+    pageNumber?: string,
     search?: string,
-    pageSize?: number,
-  ): Promise<GetAllUserResponse> {
-    this.logger.info(`UserService.getAll(page=${page}, search=${search})`);
+    pageSize?: string,
+  ): Promise<GetAllUsersResponse> {
+    this.logger.info(
+      `UserService.getAll(page=${pageNumber}, search=${search}, pageSize=${pageSize})`,
+    );
 
-    let pageNumber = parseInt(page) || 1;
+    let parsedPageNumber = parseInt(pageNumber) || 1;
+    const parsedPageSize = parseInt(pageSize) || 10;
+    const offset = (parsedPageNumber - 1) * parsedPageSize;
 
-    if (pageNumber == 0)
-      throw new HttpException('Invalid page data type', HttpStatus.BAD_REQUEST);
+    if (parsedPageNumber < 1) parsedPageNumber = 1;
 
-    if (pageNumber < 1) pageNumber = 1;
-
-    const searchFilter = search
+    const whereClause: Prisma.UserWhereInput = search
       ? {
           OR: [
             {
@@ -131,60 +120,25 @@ export class UserService {
         }
       : undefined;
 
-    if (!pageSize) {
-      const employees = await this.prismaService.user.findMany({
-        where: searchFilter,
-        orderBy: {
-          username: 'asc',
-        },
-      });
-
-      return {
-        data: employees.map(({ id, username, email, role }) => ({
-          id,
-          username,
-          email,
-          role,
-        })),
-        meta: {
-          current_page: 1,
-          previous_page: null,
-          next_page: null,
-          total_page: 1,
-          total_data: employees.length,
-        },
-      };
-    }
-
-    const offset = (pageNumber - 1) * pageSize;
-
-    const [employees, totalData] = await Promise.all([
+    const [users, totalData] = await this.prismaService.$transaction([
       this.prismaService.user.findMany({
         skip: offset,
-        take: pageSize,
-        where: searchFilter,
-        orderBy: {
-          username: 'asc',
-        },
+        take: parsedPageSize,
+        where: whereClause,
+        orderBy: { username: 'asc' },
+        select: { id: true, username: true, email: true, role: true },
       }),
-      this.prismaService.user.count({
-        where: searchFilter,
-      }),
+      this.prismaService.user.count({ where: whereClause }),
     ]);
 
-    const totalPage = Math.ceil(totalData / pageSize);
-    const previousPage = pageNumber > 1 ? pageNumber - 1 : null;
-    const nextPage = pageNumber < totalPage ? pageNumber + 1 : null;
+    const totalPage = Math.ceil(totalData / parsedPageSize);
+    const previousPage = parsedPageNumber > 1 ? parsedPageNumber - 1 : null;
+    const nextPage = parsedPageNumber < totalPage ? parsedPageNumber + 1 : null;
 
     return {
-      data: employees.map(({ id, username, email, role }) => ({
-        id,
-        username,
-        email,
-        role,
-      })),
+      data: users,
       meta: {
-        current_page: pageNumber,
+        current_page: parsedPageNumber,
         previous_page: previousPage,
         next_page: nextPage,
         total_page: totalPage,
@@ -193,84 +147,76 @@ export class UserService {
     };
   }
 
-  async getById(id: string): Promise<UserDetail> {
+  async getById(id: string): Promise<UserResponseDto> {
     this.logger.info(`UserService.getById(${id})`);
 
-    const employeeData = await this.prismaService.user.findUnique({
+    const user = await this.prismaService.user.findUnique({
       where: {
         id: id,
       },
     });
 
-    if (!employeeData)
+    if (!user)
       throw new HttpException(
-        'Data karyawan tidak ditemukan!',
+        'Data akun tidak ditemukan!',
         HttpStatus.NOT_FOUND,
       );
 
-    return {
-      id: employeeData.id,
-      username: employeeData.username,
-      email: employeeData.email,
-      role: employeeData.role,
-    };
+    return this.removeResponsePassword(user);
   }
 
-  async getByEmail(email: string): Promise<UserDetail> {
+  async getFullDataByEmail(email: string): Promise<UserEntity> {
     this.logger.info(`UserService.getByEmail(${email})`);
 
-    const employeeData = await this.prismaService.user.findUnique({
+    const user = await this.prismaService.user.findUnique({
       where: {
         email: email,
       },
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        password: true,
+        role: true,
+      },
     });
 
-    if (!employeeData)
+    if (!user)
       throw new HttpException(
-        'Data karyawan tidak ditemukan!',
+        'Data akun tidak ditemukan!',
         HttpStatus.NOT_FOUND,
       );
 
-    return {
-      id: employeeData.id,
-      username: employeeData.username,
-      email: employeeData.email,
-      role: employeeData.role,
-      password: employeeData.password,
-    };
+    return user;
   }
 
-  async update(id: string, dto: UpdateUserDto): Promise<UserDetail> {
+  async update(id: string, dto: UpdateUserDto): Promise<UserResponseDto> {
     this.logger.info(
       `UserService.update(id=${id}, dto=${JSON.stringify(dto)})`,
     );
 
-    const request = this.validationService.validate<UpdateUserDto>(
+    const validatedReq = this.validationService.validate<UpdateUserDto>(
       UserValidation.UPDATE,
       dto,
     );
 
     try {
-      const employee = await this.prismaService.user.update({
+      const user = await this.prismaService.user.update({
         where: {
           id: id,
         },
-        data: request,
+        data: validatedReq,
       });
 
-      return {
-        id: employee.id,
-        username: employee.username,
-        email: employee.email,
-        role: employee.role,
-      };
+      return this.removeResponsePassword(user);
     } catch (error) {
       if (error.code === 'P2025') {
         throw new HttpException(
-          'Data karyawan tidak ditemukan!',
+          'Data akun tidak ditemukan!',
           HttpStatus.NOT_FOUND,
         );
       }
+
       throw error;
     }
   }
@@ -284,16 +230,26 @@ export class UserService {
           id: id,
         },
       });
+
+      return `Berhasil menghapus akun: ${id}`;
     } catch (error) {
       if (error.code === 'P2025') {
+        this.logger.error(`Prisma Error (${error.code}): `);
         throw new HttpException(
           'Data akun tidak ditemukan!',
           HttpStatus.NOT_FOUND,
         );
       }
+
+      if (error.code === 'P2023') {
+        this.logger.error(`Prisma Error (${error.code}): `);
+        throw new HttpException(
+          'Format user ID invalid!',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
       throw error;
     }
-
-    return `Successfully deleted: ${id}`;
   }
 }

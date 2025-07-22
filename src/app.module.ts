@@ -12,6 +12,8 @@ import { TreatmentModule } from './treatment/treatment.module';
 import { UserModule } from './user/user.module';
 import { VitalSignModule } from './vital-sign/vital-sign.module';
 
+import { MailModule } from './mail/mail.module';
+
 @Module({
   imports: [
     CommonModule,
@@ -26,6 +28,7 @@ import { VitalSignModule } from './vital-sign/vital-sign.module';
     DrugOrderModule,
     TreatmentModule,
     MessageModule,
+    MailModule,
   ],
   controllers: [],
   providers: [],

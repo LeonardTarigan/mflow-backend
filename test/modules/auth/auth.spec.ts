@@ -4,12 +4,12 @@ import * as request from 'supertest';
 import { TestModule } from 'test/test.module';
 import { AppModule } from '../../../src/app.module';
 import { AuthTestService } from './auth.spec.service';
-import { UserDetail } from 'src/user/user.model';
+import { UserEntity } from 'src/user/user.model';
 
 describe('AuthController', () => {
   let app: INestApplication;
   let testService: AuthTestService;
-  let testUser: UserDetail;
+  let testUser: UserEntity;
 
   const API_ENDPOINT = '/api/auth/login';
 
