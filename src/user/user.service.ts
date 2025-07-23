@@ -54,7 +54,7 @@ export class UserService {
         user: UserMapper.toResponseDto(user),
       };
     } catch (error) {
-      handlePrismaError(error, {
+      handlePrismaError(error, this.logger, {
         P2002: `Email ${validatedReq.email} sudah terdaftar`,
       });
 
@@ -71,9 +71,9 @@ export class UserService {
       `UserService.getAll(page=${pageNumber}, search=${search}, pageSize=${pageSize})`,
     );
 
-    const offset = (pageNumber - 1) * pageSize;
-
     if (pageNumber < 1) pageNumber = 1;
+
+    const offset = (pageNumber - 1) * pageSize;
 
     const [users, totalData] =
       await this.userRepository.findPaginatedWithSearch(
@@ -136,7 +136,7 @@ export class UserService {
 
       return UserMapper.toResponseDto(user);
     } catch (error) {
-      handlePrismaError(error, {
+      handlePrismaError(error, this.logger, {
         P2023: 'Format user ID invalid!',
         P2025: 'Data akun tidak ditemukan',
       });
@@ -153,7 +153,7 @@ export class UserService {
 
       return `Berhasil menghapus akun: ${id}`;
     } catch (error) {
-      handlePrismaError(error, {
+      handlePrismaError(error, this.logger, {
         P2023: 'Format user ID invalid!',
         P2025: 'Data akun tidak ditemukan',
       });

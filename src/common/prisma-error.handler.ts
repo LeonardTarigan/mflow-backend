@@ -1,5 +1,6 @@
 import { HttpException, HttpStatus } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { Logger } from 'winston';
 
 type PrismaErrorCode =
   | 'P2002'
@@ -46,6 +47,7 @@ const defaultPrismaErrors: Record<
 
 export function handlePrismaError(
   error: unknown,
+  logger: Logger,
   customMessages?: Partial<Record<PrismaErrorCode, string>>,
 ): void {
   if (
@@ -56,6 +58,11 @@ export function handlePrismaError(
       defaultPrismaErrors[error.code as PrismaErrorCode];
     const message =
       customMessages?.[error.code as PrismaErrorCode] ?? defaultMessage;
+
+    logger.error(`Prisma Error ${error.code}: "${message}"`, {
+      meta: error.meta,
+      stack: error.stack,
+    });
 
     throw new HttpException(message, status);
   }

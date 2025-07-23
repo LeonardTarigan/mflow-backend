@@ -30,9 +30,9 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: npx prisma migrate reset --force
 
-      - name: Run tests
+      - name: Run unit tests
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
           JWT_EXPIRES_IN: ${{secrets.JWT_EXPIRES_IN}}
-        run: pnpm test
+        run: pnpm test:unit
