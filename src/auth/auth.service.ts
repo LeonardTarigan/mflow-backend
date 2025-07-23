@@ -26,7 +26,7 @@ export class AuthService {
       dto,
     );
 
-    const user = await this.userService.getFullDataByEmail(validatedReq.email);
+    const user = await this.userService.getRawByEmail(validatedReq.email);
 
     if (!user)
       throw new HttpException(

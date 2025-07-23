@@ -3,12 +3,17 @@ import { OnEvent } from '@nestjs/event-emitter';
 import { User } from '@prisma/client';
 import { MailService } from 'src/mail/mail.service';
 
+import { UserEvent } from './user.event';
+
 @Injectable()
-export class UserListener {
+export class UserEventService {
   constructor(private readonly mailService: MailService) {}
 
-  @OnEvent('user.created')
-  handleUserCreatedEvent(payload: { user: User; generatedPassword: string }) {
+  @OnEvent(UserEvent.Created)
+  handleUserCreatedEvent(payload: {
+    user: User;
+    generatedPassword: string;
+  }): void {
     this.mailService.sendWelcomeEmail(payload.user, payload.generatedPassword);
   }
 }

@@ -1,11 +1,13 @@
 import {
   Body,
   Controller,
+  DefaultValuePipe,
   Delete,
   Get,
   HttpCode,
   HttpStatus,
   Param,
+  ParseIntPipe,
   Patch,
   Post,
   Query,
@@ -27,11 +29,11 @@ export class UserController {
   @Get()
   @HttpCode(HttpStatus.OK)
   async getAll(
-    @Query('page') page: string,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('pageSize', new DefaultValuePipe(10), ParseIntPipe) pageSize: number,
     @Query('search') search: string,
-    @Query('pageSize') pageSize: string,
   ): Promise<ApiResponse<UserResponseDto[]>> {
-    const { data, meta } = await this.service.getAll(page, search, pageSize);
+    const { data, meta } = await this.service.getAll(page, pageSize, search);
 
     return {
       data,

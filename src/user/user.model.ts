@@ -10,7 +10,7 @@ export class UserEntity {
   password: string;
 }
 
-export class CreateUserDto extends OmitType(UserEntity, ['id']) {}
+export class CreateUserDto extends OmitType(UserEntity, ['id', 'password']) {}
 
 export class UpdateUserDto extends PartialType(
   PickType(UserEntity, ['username', 'role']),
