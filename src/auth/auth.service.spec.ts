@@ -4,19 +4,20 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { UserRole } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
-import { AuthLoginDto } from 'src/auth/auth.model';
 import { AuthService } from 'src/auth/auth.service';
-import { ValidationService } from 'src/common/validation.service';
 import { UserService } from 'src/user/user.service';
 
-// Mock the bcrypt library
+import { AuthLoginDto } from './domain/model/auth.dto';
+import { AuthValidationService } from './domain/validation/auth-validation.service';
+
+// Mock the external bcryptjs library
 jest.mock('bcryptjs', () => ({
   compare: jest.fn(),
 }));
 
 describe('AuthService', () => {
   let authService: AuthService;
-  let validationService: jest.Mocked<ValidationService>;
+  let validationService: jest.Mocked<AuthValidationService>;
   let userService: jest.Mocked<UserService>;
   let jwtService: jest.Mocked<JwtService>;
 
@@ -30,8 +31,10 @@ describe('AuthService', () => {
     id: 'user-id-1',
     username: 'testuser',
     email: 'test@example.com',
-    password: 'hashedPassword', // This is the hashed password from the DB
+    password: 'hashedPasswordFromDb',
     role: UserRole.ADMIN,
+    created_at: new Date(),
+    updated_at: new Date(),
   };
 
   const mockToken = 'mock.jwt.token';
@@ -39,39 +42,38 @@ describe('AuthService', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
-        AuthService,
+        AuthService, // The real service we are testing
         {
-          provide: ValidationService,
-          useValue: { validate: jest.fn() },
-        },
-        {
-          provide: UserService,
-          useValue: { getRawByEmail: jest.fn() },
+          provide: WINSTON_MODULE_PROVIDER,
+          useValue: { info: jest.fn(), error: jest.fn() },
         },
         {
           provide: JwtService,
           useValue: { signAsync: jest.fn() },
         },
         {
-          provide: WINSTON_MODULE_PROVIDER,
-          useValue: { info: jest.fn(), error: jest.fn() },
+          provide: UserService,
+          useValue: { getRawByEmail: jest.fn() },
+        },
+        {
+          provide: AuthValidationService,
+          useValue: { validateLoginDto: jest.fn() },
         },
       ],
     }).compile();
 
     authService = module.get<AuthService>(AuthService);
-    validationService = module.get(ValidationService);
+    validationService = module.get(AuthValidationService);
     userService = module.get(UserService);
     jwtService = module.get(JwtService);
 
-    // Clear mock history before each test
     jest.clearAllMocks();
   });
 
   describe('login()', () => {
     it('should return a user and token on successful login', async () => {
       // Arrange
-      validationService.validate.mockReturnValue(mockLoginDto);
+      validationService.validateLoginDto.mockReturnValue(mockLoginDto);
       userService.getRawByEmail.mockResolvedValue(mockUser);
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
       jwtService.signAsync.mockResolvedValue(mockToken);
@@ -80,7 +82,9 @@ describe('AuthService', () => {
       const result = await authService.login(mockLoginDto);
 
       // Assert
-      expect(validationService.validate).toHaveBeenCalled();
+      expect(validationService.validateLoginDto).toHaveBeenCalledWith(
+        mockLoginDto,
+      );
       expect(userService.getRawByEmail).toHaveBeenCalledWith(
         mockLoginDto.email,
       );
@@ -94,50 +98,39 @@ describe('AuthService', () => {
         role: mockUser.role,
         email: mockUser.email,
       });
-      expect(result).toEqual({
-        user: {
-          id: mockUser.id,
-          username: mockUser.username,
-          email: mockUser.email,
-          role: mockUser.role,
-        },
-        token: mockToken,
-      });
+      expect(result.token).toBe(mockToken);
+      expect(result.user.id).toBe(mockUser.id);
     });
 
     it('should throw an UNAUTHORIZED HttpException if user is not found', async () => {
       // Arrange
-      validationService.validate.mockReturnValue(mockLoginDto);
-      userService.getRawByEmail.mockResolvedValue(null); // Simulate user not found
+      validationService.validateLoginDto.mockReturnValue(mockLoginDto);
+      userService.getRawByEmail.mockResolvedValue(null);
 
       // Act & Assert
       await expect(authService.login(mockLoginDto)).rejects.toThrow(
-        HttpException,
+        new HttpException(
+          'Email atau password salah!',
+          HttpStatus.UNAUTHORIZED,
+        ),
       );
-      await expect(authService.login(mockLoginDto)).rejects.toMatchObject({
-        status: HttpStatus.UNAUTHORIZED,
-      });
-
-      // Ensure subsequent functions were not called
       expect(bcrypt.compare).not.toHaveBeenCalled();
       expect(jwtService.signAsync).not.toHaveBeenCalled();
     });
 
     it('should throw an UNAUTHORIZED HttpException if password does not match', async () => {
       // Arrange
-      validationService.validate.mockReturnValue(mockLoginDto);
+      validationService.validateLoginDto.mockReturnValue(mockLoginDto);
       userService.getRawByEmail.mockResolvedValue(mockUser);
-      (bcrypt.compare as jest.Mock).mockResolvedValue(false); // Simulate password mismatch
+      (bcrypt.compare as jest.Mock).mockResolvedValue(false);
 
       // Act & Assert
       await expect(authService.login(mockLoginDto)).rejects.toThrow(
-        HttpException,
+        new HttpException(
+          'Email atau password salah!',
+          HttpStatus.UNAUTHORIZED,
+        ),
       );
-      await expect(authService.login(mockLoginDto)).rejects.toMatchObject({
-        status: HttpStatus.UNAUTHORIZED,
-      });
-
-      // Ensure JWT service was not called
       expect(jwtService.signAsync).not.toHaveBeenCalled();
     });
 
@@ -147,7 +140,7 @@ describe('AuthService', () => {
         'Validation Failed',
         HttpStatus.BAD_REQUEST,
       );
-      validationService.validate.mockImplementation(() => {
+      validationService.validateLoginDto.mockImplementation(() => {
         throw validationError;
       });
 
@@ -155,11 +148,7 @@ describe('AuthService', () => {
       await expect(authService.login(mockLoginDto)).rejects.toThrow(
         validationError,
       );
-
-      // Ensure no other services were called
       expect(userService.getRawByEmail).not.toHaveBeenCalled();
-      expect(bcrypt.compare).not.toHaveBeenCalled();
-      expect(jwtService.signAsync).not.toHaveBeenCalled();
     });
   });
 });

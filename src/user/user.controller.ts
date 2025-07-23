@@ -19,7 +19,7 @@ import {
   CreateUserResponse,
   UpdateUserDto,
   UserResponseDto,
-} from './user.model';
+} from './domain/model/user.dto';
 import { UserService } from './user.service';
 
 @Controller('/api/users')

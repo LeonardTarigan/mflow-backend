@@ -1,6 +1,7 @@
 import { User } from '@prisma/client';
 
-import { UserEntity, UserResponseDto } from '../user.model';
+import { UserResponseDto } from '../model/user.dto';
+import { UserEntity } from '../model/user.schema';
 
 export class UserMapper {
   static toResponseDto(user: User): UserResponseDto {

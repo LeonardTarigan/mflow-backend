@@ -1,36 +1,41 @@
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
+import { User } from '@prisma/client';
+import { ZodValidationPipe } from 'nestjs-zod';
 import { AppModule } from 'src/app.module';
-import { UserEntity } from 'src/user/user.model';
+import { UserFactory } from 'src/user/domain/factory/user.factory';
 import * as request from 'supertest';
 
-import { AuthTestService } from './auth.spec.service';
-
-describe('AuthController', () => {
+describe('AuthController (E2E)', () => {
   let app: INestApplication;
-  let testService: AuthTestService;
-  let testUser: UserEntity;
+  let userFactory: UserFactory;
+  let testUser: User;
+  let plainTextPassword: string;
 
   const API_ENDPOINT = '/api/auth/login';
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
+      providers: [UserFactory],
     }).compile();
 
     app = moduleFixture.createNestApplication();
+    app.useGlobalPipes(new ZodValidationPipe());
     await app.init();
 
-    testService = app.get(AuthTestService);
+    userFactory = app.get(UserFactory);
   });
 
   beforeEach(async () => {
-    testUser = await testService.createUser();
+    const result = await userFactory.create();
+    testUser = result.user;
+    plainTextPassword = result.plainTextPassword;
   });
 
   afterEach(async () => {
     if (testUser) {
-      await testService.deleteUser(testUser.id);
+      await userFactory.delete(testUser.id);
     }
   });
 
@@ -39,9 +44,9 @@ describe('AuthController', () => {
   });
 
   describe(`POST ${API_ENDPOINT}`, () => {
-    it('should be rejected as validation error', async () => {
+    it('should be rejected for validation errors', async () => {
       const res = await request(app.getHttpServer()).post(API_ENDPOINT).send({
-        email: '',
+        email: 'not-an-email',
         password: '',
       });
 
@@ -49,16 +54,24 @@ describe('AuthController', () => {
       expect(res.body.error).toBeDefined();
     });
 
-    it('should be able to login', async () => {
+    it('should log in successfully with correct credentials', async () => {
       const res = await request(app.getHttpServer()).post(API_ENDPOINT).send({
         email: testUser.email,
-        password: testService.TEST_USER_PASSWORD,
+        password: plainTextPassword,
       });
 
       expect(res.status).toBe(200);
       expect(res.body.data.user.email).toBe(testUser.email);
       expect(res.body.data.token).toBeDefined();
-      expect(res.body.error).toBeUndefined();
+    });
+
+    it('should fail with incorrect credentials', async () => {
+      const res = await request(app.getHttpServer()).post(API_ENDPOINT).send({
+        email: testUser.email,
+        password: 'wrong-password',
+      });
+
+      expect(res.status).toBe(401);
     });
   });
 });

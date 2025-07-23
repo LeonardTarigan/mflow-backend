@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { MailerService } from '@nestjs-modules/mailer';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
-import { UserEntity } from 'src/user/user.model';
+import { UserEntity } from 'src/user/domain/model/user.schema';
 import { Logger } from 'winston';
 
 @Injectable()

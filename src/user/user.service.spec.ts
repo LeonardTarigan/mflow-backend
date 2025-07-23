@@ -6,13 +6,13 @@ import * as bcrypt from 'bcryptjs';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { handlePrismaError } from 'src/common/prisma-error.handler';
 
-import { UserEvent } from './event/user.event';
-import { UserMapper } from './mapper/user.mapper';
-import { PasswordService } from './password/password.service';
-import { CreateUserDto } from './user.model';
-import { UserRepository } from './user.repository';
+import { UserEvent } from './domain/event/user.event';
+import { UserMapper } from './domain/mapper/user.mapper';
+import { CreateUserDto } from './domain/model/user.dto';
+import { PasswordService } from './domain/password/password.service';
+import { UserValidationService } from './domain/validation/user-validation.service';
+import { UserRepository } from './infrastructure/user.repository';
 import { UserService } from './user.service';
-import { UserValidationService } from './validation/user-validation.service';
 
 // Mock the prisma error handler for the entire test suite.
 jest.mock('src/common/prisma-error.handler', () => ({

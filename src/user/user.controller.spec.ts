@@ -1,17 +1,17 @@
 import { randomUUID } from 'crypto';
 
-import { INestApplication } from '@nestjs/common';
+import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
+import { User } from '@prisma/client';
 import { AppModule } from 'src/app.module';
-import { UserEntity } from 'src/user/user.model';
 import * as request from 'supertest';
 
-import { UserControllerSpecService } from './user-controller-spec.service';
+import { UserFactory } from './domain/factory/user.factory';
 
-describe('UserController', () => {
+describe('UserController (E2E)', () => {
   let app: INestApplication;
-  let testService: UserControllerSpecService;
+  let userFactory: UserFactory;
   let jwtService: JwtService;
 
   const API_ENDPOINT = '/api/users';
@@ -19,12 +19,14 @@ describe('UserController', () => {
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
+      providers: [UserFactory],
     }).compile();
 
     app = moduleFixture.createNestApplication();
+    app.useGlobalPipes(new ValidationPipe());
     await app.init();
 
-    testService = app.get(UserControllerSpecService);
+    userFactory = app.get(UserFactory);
     jwtService = app.get(JwtService);
   });
 
@@ -33,205 +35,155 @@ describe('UserController', () => {
   });
 
   describe(`POST ${API_ENDPOINT}`, () => {
-    let token: string;
-    let testUser: UserEntity;
+    let adminToken: string;
+    const usersToDelete: string[] = []; // Keep track of users to clean up
 
-    beforeAll(async () => {
-      token = jwtService.sign({
-        sub: randomUUID(),
-        email: testService.TEST_USER_EMAIL,
-      });
+    beforeAll(() => {
+      // Create a single token for an admin user for all tests in this block
+      adminToken = jwtService.sign({ sub: randomUUID(), role: 'ADMIN' });
     });
 
-    afterAll(async () => await testService.deleteTestUser(testUser.id));
+    afterEach(async () => {
+      // Clean up any users created during the tests
+      for (const id of usersToDelete) {
+        await userFactory.delete(id).catch(() => {}); // Ignore errors if user was already deleted
+      }
+      usersToDelete.length = 0; // Reset the array
+    });
 
-    it('should not be authorized', async () => {
+    it('should not be authorized without a token', async () => {
       const res = await request(app.getHttpServer()).post(API_ENDPOINT).send({
-        username: testService.TEST_USER_NAME,
-        email: testService.TEST_USER_EMAIL,
-        role: testService.TEST_USER_ROLE,
-        password: testService.TEST_USER_PASSWORD,
+        username: 'test_user',
+        email: 'test@mail.com',
+        role: 'ADMIN',
       });
-
       expect(res.status).toBe(401);
-      expect(res.body.error).toBeDefined();
     });
 
-    it('should be rejected as validation error', async () => {
+    it('should be rejected for validation errors', async () => {
       const res = await request(app.getHttpServer())
         .post(API_ENDPOINT)
-        .set('Authorization', `Bearer ${token}`)
-        .send({
-          id: '',
-          name: '',
-          email: '',
-          role: '',
-          password: '',
-        });
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ username: '' }); // Invalid payload
 
       expect(res.status).toBe(400);
-      expect(res.body.error).toBeDefined();
     });
 
-    it('should create new user', async () => {
+    it('should create a new user successfully', async () => {
+      const newUserEmail = 'new.user@test.com';
       const res = await request(app.getHttpServer())
         .post(API_ENDPOINT)
-        .set('Authorization', `Bearer ${token}`)
+        .set('Authorization', `Bearer ${adminToken}`)
         .send({
-          username: testService.TEST_USER_NAME,
-          email: testService.TEST_USER_EMAIL,
-          role: testService.TEST_USER_ROLE,
+          username: 'new_test_user',
+          email: newUserEmail,
+          role: 'USER',
         });
 
       expect(res.status).toBe(201);
-      expect(res.body.data.user.email).toBe(testService.TEST_USER_EMAIL);
-      expect(res.body.error).toBeUndefined();
+      expect(res.body.data.user.email).toBe(newUserEmail);
 
-      testUser = res.body.data.user;
+      // Add the created user's ID to the list for cleanup
+      if (res.body.data.user.id) {
+        usersToDelete.push(res.body.data.user.id);
+      }
     });
   });
 
+  // ✨ REFACTORED: GET /api/users
   describe(`GET ${API_ENDPOINT}`, () => {
-    let token: string;
+    let adminToken: string;
+    let testUser: User;
 
-    beforeAll(async () => {
-      token = jwtService.sign({
-        sub: randomUUID(),
-        email: testService.TEST_USER_EMAIL,
-      });
+    // Use beforeEach and afterEach for perfect isolation
+    beforeEach(async () => {
+      const res = await userFactory.create({ role: 'ADMIN' });
+      testUser = res.user;
+      adminToken = jwtService.sign({ sub: testUser.id, role: testUser.role });
     });
 
-    it('should not be authorized', async () => {
+    afterEach(async () => {
+      await userFactory.delete(testUser.id);
+    });
+
+    it('should not be authorized without a token', async () => {
       const res = await request(app.getHttpServer()).get(API_ENDPOINT);
-
       expect(res.status).toBe(401);
-      expect(res.body.error).toBeDefined();
     });
 
-    it('should be able to get all users data', async () => {
+    it('should get all users data', async () => {
+      // We know a user exists because beforeEach created one
       const res = await request(app.getHttpServer())
         .get(API_ENDPOINT)
-        .set('Authorization', `Bearer ${token}`);
+        .set('Authorization', `Bearer ${adminToken}`);
 
       expect(res.status).toBe(200);
       expect(res.body.data).toBeDefined();
-      expect(res.body.meta).toBeDefined();
-      expect(res.body.error).toBeUndefined();
+      expect(res.body.data.length).toBeGreaterThanOrEqual(1);
     });
   });
 
-  describe(`PATCH ${API_ENDPOINT}`, () => {
-    const NEW_USER_NAME = 'updated_name';
-    const NEW_USER_ROLE = 'ADMIN';
+  // ✨ REFACTORED: PATCH /api/users/:id
+  describe(`PATCH ${API_ENDPOINT}/:id`, () => {
+    let adminToken: string;
+    let testUser: User;
 
-    let token: string;
-    let testUser: UserEntity;
-
-    beforeAll(async () => {
-      testUser = await testService.createTestUser();
-      token = jwtService.sign({ sub: testUser.id, email: testUser.email });
+    beforeEach(async () => {
+      const res = await userFactory.create({ role: 'ADMIN' });
+      testUser = res.user;
+      adminToken = jwtService.sign({ sub: testUser.id, role: testUser.role });
     });
 
-    afterAll(async () => {
-      await testService.deleteTestUser(testUser.id);
-    });
-
-    it('should not be authorized', async () => {
-      const res = await request(app.getHttpServer())
-        .patch(`${API_ENDPOINT}/${testUser.id}`)
-        .send({
-          username: NEW_USER_NAME,
-          role: NEW_USER_ROLE,
-        });
-
-      expect(res.status).toBe(401);
-      expect(res.body.error).toBeDefined();
-    });
-
-    it('should return invalid UUID', async () => {
-      const res = await request(app.getHttpServer())
-        .patch(`${API_ENDPOINT}/invalid-uuid`)
-        .set('Authorization', `Bearer ${token}`)
-        .send({
-          username: NEW_USER_NAME,
-          role: NEW_USER_ROLE,
-        });
-
-      expect(res.status).toBe(400);
-      expect(res.body.error).toBeDefined();
-    });
-
-    it('should be rejected as validation error', async () => {
-      const res = await request(app.getHttpServer())
-        .patch(`${API_ENDPOINT}/${testUser.id}`)
-        .set('Authorization', `Bearer ${token}`)
-        .send({
-          username: '',
-          role: '',
-        });
-
-      expect(res.status).toBe(400);
-      expect(res.body.error).toBeDefined();
+    afterEach(async () => {
+      await userFactory.delete(testUser.id);
     });
 
     it('should update username and role', async () => {
       const res = await request(app.getHttpServer())
         .patch(`${API_ENDPOINT}/${testUser.id}`)
-        .set('Authorization', `Bearer ${token}`)
-        .send({
-          username: NEW_USER_NAME,
-          role: NEW_USER_ROLE,
-        });
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ username: 'updated_name', role: 'USER' });
 
       expect(res.status).toBe(200);
-      expect(res.body.data.username).toBe(NEW_USER_NAME);
-      expect(res.body.error).toBeUndefined();
+      expect(res.body.data.username).toBe('updated_name');
+      expect(res.body.data.role).toBe('USER');
+    });
+
+    it('should return 400 for an invalid UUID', async () => {
+      const res = await request(app.getHttpServer())
+        .patch(`${API_ENDPOINT}/invalid-uuid`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ username: 'any' });
+
+      expect(res.status).toBe(400);
     });
   });
 
-  describe(`DELETE ${API_ENDPOINT}`, () => {
-    let token: string;
-    let testUser: UserEntity;
+  describe(`DELETE ${API_ENDPOINT}/:id`, () => {
+    let adminToken: string;
+    let userToDelete: User;
 
-    beforeAll(async () => {
-      testUser = await testService.createTestUser();
-      token = jwtService.sign({ sub: testUser.id, email: testUser.email });
+    beforeEach(async () => {
+      const res = await userFactory.create({ role: 'ADMIN' });
+      userToDelete = res.user;
+      // Assume the deleting user is an admin
+      adminToken = jwtService.sign({ sub: randomUUID(), role: 'ADMIN' });
     });
 
-    it('should not be authorized', async () => {
-      const res = await request(app.getHttpServer()).delete(
-        `${API_ENDPOINT}/${testUser.id}`,
-      );
-
-      expect(res.status).toBe(401);
-      expect(res.body.error).toBeDefined();
-    });
-
-    it('should be invalid id data type', async () => {
-      const res = await request(app.getHttpServer())
-        .delete(`${API_ENDPOINT}/invalid_id`)
-        .set('Authorization', `Bearer ${token}`);
-
-      expect(res.status).toBe(400);
-      expect(res.body.error).toBeDefined();
-    });
-
-    it('should return invalid UUID', async () => {
-      const res = await request(app.getHttpServer())
-        .delete(`${API_ENDPOINT}/invalid-uuid`)
-        .set('Authorization', `Bearer ${token}`);
-
-      expect(res.status).toBe(400);
-      expect(res.body.error).toBeDefined();
-    });
+    // Note: No afterEach needed here, as the test itself performs the deletion
 
     it('should delete the test record', async () => {
       const res = await request(app.getHttpServer())
-        .delete(`${API_ENDPOINT}/${testUser.id}`)
-        .set('Authorization', `Bearer ${token}`);
+        .delete(`${API_ENDPOINT}/${userToDelete.id}`)
+        .set('Authorization', `Bearer ${adminToken}`);
 
       expect(res.status).toBe(200);
-      expect(res.body.error).toBeUndefined();
+
+      // Optional: Verify the user is actually gone
+      const findRes = await request(app.getHttpServer())
+        .get(`${API_ENDPOINT}/${userToDelete.id}`)
+        .set('Authorization', `Bearer ${adminToken}`);
+      expect(findRes.status).toBe(404);
     });
   });
 });

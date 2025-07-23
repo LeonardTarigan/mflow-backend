@@ -1,12 +1,12 @@
 import { Module } from '@nestjs/common';
 import { MailModule } from 'src/mail/mail.module';
 
-import { UserEventService } from './event/user-event.service';
-import { PasswordService } from './password/password.service';
+import { UserEventService } from './domain/event/user-event.service';
+import { PasswordService } from './domain/password/password.service';
+import { UserValidationService } from './domain/validation/user-validation.service';
+import { UserRepository } from './infrastructure/user.repository';
 import { UserController } from './user.controller';
-import { UserRepository } from './user.repository';
 import { UserService } from './user.service';
-import { UserValidationService } from './validation/user-validation.service';
 
 @Module({
   controllers: [UserController],

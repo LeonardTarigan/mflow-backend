@@ -5,19 +5,19 @@ import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { handlePrismaError } from 'src/common/prisma-error.handler';
 import { Logger } from 'winston';
 
-import { UserEvent } from './event/user.event';
-import { UserMapper } from './mapper/user.mapper';
-import { PasswordService } from './password/password.service';
+import { UserEvent } from './domain/event/user.event';
+import { UserMapper } from './domain/mapper/user.mapper';
 import {
   CreateUserDto,
+  UpdateUserDto,
   CreateUserResponse,
   GetAllUsersResponse,
-  UpdateUserDto,
-  UserEntity,
   UserResponseDto,
-} from './user.model';
-import { UserRepository } from './user.repository';
-import { UserValidationService } from './validation/user-validation.service';
+} from './domain/model/user.dto';
+import { UserEntity } from './domain/model/user.schema';
+import { PasswordService } from './domain/password/password.service';
+import { UserValidationService } from './domain/validation/user-validation.service';
+import { UserRepository } from './infrastructure/user.repository';
 
 @Injectable()
 export class UserService {
@@ -43,10 +43,14 @@ export class UserService {
     const hashedPassword = await bcrypt.hash(generatedPassword, 10);
 
     try {
-      const user = await this.userRepository.create({
+      const createInput = {
+        username: validatedReq.username,
+        email: validatedReq.email,
+        role: validatedReq.role,
         password: hashedPassword,
-        ...validatedReq,
-      });
+      };
+
+      const user = await this.userRepository.create(createInput);
 
       this.eventEmitter.emit(UserEvent.Created, { user, generatedPassword });
 
