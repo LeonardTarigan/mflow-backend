@@ -339,8 +339,6 @@ export class QueueService {
     const previousPage = pageNumber > 1 ? pageNumber - 1 : null;
     const nextPage = pageNumber < totalPage ? pageNumber + 1 : null;
 
-    console.log(careSessions);
-
     return {
       data: careSessions.map((session) => ({
         ...this.transformCareSession(session),
