@@ -1,10 +1,8 @@
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
+import { AppModule } from 'src/app.module';
 import { UserEntity } from 'src/user/user.model';
 import * as request from 'supertest';
-import { TestModule } from 'test/test.module';
-
-import { AppModule } from '../../../src/app.module';
 
 import { AuthTestService } from './auth.spec.service';
 
@@ -17,7 +15,7 @@ describe('AuthController', () => {
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule, TestModule],
+      imports: [AppModule],
     }).compile();
 
     app = moduleFixture.createNestApplication();

@@ -5,13 +5,14 @@ import { Prisma, User, UserRole } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { handlePrismaError } from 'src/common/prisma-error.handler';
-import { UserEvent } from 'src/user/event/user.event';
-import { UserMapper } from 'src/user/mapper/user.mapper';
-import { PasswordService } from 'src/user/password/password.service';
-import { CreateUserDto } from 'src/user/user.model';
-import { UserRepository } from 'src/user/user.repository';
-import { UserService } from 'src/user/user.service';
-import { UserValidationService } from 'src/user/validation/user-validation.service';
+
+import { UserEvent } from './event/user.event';
+import { UserMapper } from './mapper/user.mapper';
+import { PasswordService } from './password/password.service';
+import { CreateUserDto } from './user.model';
+import { UserRepository } from './user.repository';
+import { UserService } from './user.service';
+import { UserValidationService } from './validation/user-validation.service';
 
 // Mock the prisma error handler for the entire test suite.
 jest.mock('src/common/prisma-error.handler', () => ({

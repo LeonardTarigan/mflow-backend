@@ -13,7 +13,8 @@
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
     "test": "NODE_ENV=test jest",
-    "test:unit": "jest --testPathIgnorePatterns=e2e.spec.ts",
+    "test:unit": "jest --testPathIgnorePatterns=controller.spec.ts",
+    "test:e2e": "jest --testPathIgnorePatterns=service.spec.ts",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
@@ -83,7 +84,7 @@
       "json",
       "ts"
     ],
-    "rootDir": "test",
+    "rootDir": "src",
     "testRegex": ".*\\.spec\\.ts$",
     "transform": {
       "^.+\\.(t|j)s$": "ts-jest"

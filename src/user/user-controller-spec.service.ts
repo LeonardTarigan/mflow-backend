@@ -4,7 +4,7 @@ import { PrismaService } from 'src/common/prisma.service';
 import { UserEntity } from 'src/user/user.model';
 
 @Injectable()
-export class UserTestService {
+export class UserControllerSpecService {
   constructor(private prismaService: PrismaService) {}
 
   readonly TEST_USER_NAME = 'testing_name';

@@ -3,30 +3,28 @@ import { randomUUID } from 'crypto';
 import { INestApplication } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
+import { AppModule } from 'src/app.module';
 import { UserEntity } from 'src/user/user.model';
 import * as request from 'supertest';
-import { TestModule } from 'test/test.module';
 
-import { AppModule } from '../../../src/app.module';
-
-import { UserTestService } from './user.spec.service';
+import { UserControllerSpecService } from './user-controller-spec.service';
 
 describe('UserController', () => {
   let app: INestApplication;
-  let testService: UserTestService;
+  let testService: UserControllerSpecService;
   let jwtService: JwtService;
 
   const API_ENDPOINT = '/api/users';
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule, TestModule],
+      imports: [AppModule],
     }).compile();
 
     app = moduleFixture.createNestApplication();
     await app.init();
 
-    testService = app.get(UserTestService);
+    testService = app.get(UserControllerSpecService);
     jwtService = app.get(JwtService);
   });
 
