@@ -3,50 +3,45 @@ import { Prisma } from '@prisma/client';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { handlePrismaError } from 'src/common/prisma-error.handler';
 
-import { CreateDrugDto } from './domain/model/drug.model';
-import { DrugService } from './drug.service';
-import { DrugRepository } from './infrastucture/drug.repository';
+import { CreateRoomDto } from './domain/model/room.model';
+import { RoomRepository } from './infrastructure/room.repository';
+import { RoomService } from './room.service';
 
-// Mock the external error handler at the top level
+// Mock the external error handler
 jest.mock('src/common/prisma-error.handler', () => ({
   handlePrismaError: jest.fn(),
 }));
 
-describe('DrugService', () => {
-  let service: DrugService;
-  let repository: jest.Mocked<DrugRepository>;
+describe('RoomService', () => {
+  let service: RoomService;
+  let repository: jest.Mocked<RoomRepository>;
 
   // --- MOCK DATA ---
-  const mockDrug = {
+  const mockRoom = {
     id: 1,
-    name: 'Mock Drug',
-    amount_sold: 0,
-    unit: 'Strip',
-    price: 5000,
+    name: 'Mock Room',
     created_at: new Date(),
     updated_at: new Date(),
   };
 
-  const mockCreateDto: CreateDrugDto = {
-    name: 'Mock Drug',
-    unit: 'Strip',
-    price: 5000,
+  const mockCreateDto: CreateRoomDto = {
+    name: 'Mock Room',
   };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
-        DrugService,
+        RoomService,
         {
           provide: WINSTON_MODULE_PROVIDER,
           useValue: { info: jest.fn(), error: jest.fn() },
         },
         {
-          provide: DrugRepository,
+          provide: RoomRepository,
           useValue: {
             create: jest.fn(),
-            findMany: jest.fn(),
             findManyWithPagination: jest.fn(),
+            findMany: jest.fn(),
             update: jest.fn(),
             deleteById: jest.fn(),
           },
@@ -54,29 +49,28 @@ describe('DrugService', () => {
       ],
     }).compile();
 
-    service = module.get<DrugService>(DrugService);
-    repository = module.get(DrugRepository);
+    service = module.get<RoomService>(RoomService);
+    repository = module.get(RoomRepository);
 
-    // Clear the mock's history before each test
     (handlePrismaError as jest.Mock).mockClear();
   });
 
   // --- TESTS ---
 
   describe('create()', () => {
-    it('should create a drug successfully', async () => {
+    it('should create a room successfully', async () => {
       // Arrange
-      repository.create.mockResolvedValue(mockDrug);
+      repository.create.mockResolvedValue(mockRoom);
 
       // Act
       const result = await service.create(mockCreateDto);
 
       // Assert
       expect(repository.create).toHaveBeenCalledWith(mockCreateDto);
-      expect(result).toEqual(mockDrug);
+      expect(result).toEqual(mockRoom);
     });
 
-    it('should handle duplicate drug name errors', async () => {
+    it('should handle duplicate room name errors', async () => {
       // Arrange
       const prismaError = new Prisma.PrismaClientKnownRequestError('Error', {
         code: 'P2002',
@@ -94,11 +88,10 @@ describe('DrugService', () => {
   });
 
   describe('getAll()', () => {
-    it('should return a paginated list of drugs when pageSize is provided', async () => {
+    it('should return a paginated list of rooms when pageSize is provided', async () => {
       // Arrange
-      const mockDrugs = [mockDrug];
-      // This scenario tests a simple case where there's only one page.
-      repository.findManyWithPagination.mockResolvedValue([mockDrugs, 1]);
+      const mockRooms = [mockRoom];
+      repository.findManyWithPagination.mockResolvedValue([mockRooms, 1]);
 
       // Act
       const result = await service.getAll(1, 10);
@@ -109,19 +102,17 @@ describe('DrugService', () => {
         10,
         undefined,
       );
-      expect(result.data[0]).toEqual(mockDrug);
-      expect(result.meta.total_data).toBe(1);
+      expect(result.data[0]).toEqual(mockRoom);
       expect(result.meta.total_page).toBe(1);
     });
 
     it('should calculate metadata correctly for a middle page', async () => {
       // Arrange
-      const totalData = 30;
+      const totalData = 25;
       const pageNumber = 2;
       const pageSize = 10;
-      const expectedOffset = 10;
       repository.findManyWithPagination.mockResolvedValue([
-        [mockDrug],
+        [mockRoom],
         totalData,
       ]);
 
@@ -129,11 +120,6 @@ describe('DrugService', () => {
       const result = await service.getAll(pageNumber, pageSize);
 
       // Assert
-      expect(repository.findManyWithPagination).toHaveBeenCalledWith(
-        expectedOffset,
-        pageSize,
-        undefined,
-      );
       expect(result.meta).toEqual({
         current_page: pageNumber,
         previous_page: 1,
@@ -143,13 +129,13 @@ describe('DrugService', () => {
       });
     });
 
-    it('should return all drugs when pageSize is not provided', async () => {
+    it('should return all rooms when pageSize is not provided', async () => {
       // Arrange
-      const mockDrugs = [mockDrug, { ...mockDrug, id: 2, name: 'Amoxicillin' }];
-      repository.findMany.mockResolvedValue([mockDrugs, 2]);
+      const mockRooms = [mockRoom, { ...mockRoom, id: 2 }];
+      repository.findMany.mockResolvedValue([mockRooms, 2]);
 
       // Act
-      const result = await service.getAll(1);
+      const result = await service.getAll(1, undefined);
 
       // Assert
       expect(repository.findMany).toHaveBeenCalled();
@@ -174,7 +160,7 @@ describe('DrugService', () => {
       repository.findManyWithPagination.mockResolvedValue([[], 0]);
 
       // Act
-      const result = await service.getAll(0, 10);
+      const result = await service.getAll(-1, 10);
 
       // Assert
       expect(repository.findManyWithPagination).toHaveBeenCalledWith(
@@ -187,18 +173,18 @@ describe('DrugService', () => {
   });
 
   describe('update()', () => {
-    it('should update a drug successfully', async () => {
+    it('should update a room successfully', async () => {
       // Arrange
-      const updateDto = { name: 'Ibuprofen' };
-      const updatedDrug = { ...mockDrug, ...updateDto };
-      repository.update.mockResolvedValue(updatedDrug);
+      const updateDto = { name: 'Kamar Anggrek' };
+      const updatedRoom = { ...mockRoom, ...updateDto };
+      repository.update.mockResolvedValue(updatedRoom);
 
       // Act
       const result = await service.update(1, updateDto);
 
       // Assert
       expect(repository.update).toHaveBeenCalledWith(1, updateDto);
-      expect(result).toEqual(updatedDrug);
+      expect(result).toEqual(updatedRoom);
     });
 
     it('should handle not found errors on update', async () => {
@@ -219,17 +205,17 @@ describe('DrugService', () => {
   });
 
   describe('delete()', () => {
-    it('should delete a drug and return a success message', async () => {
+    it('should delete a room and return a success message', async () => {
       // Arrange
-      const drugId = 1;
+      const roomId = 1;
       repository.deleteById.mockResolvedValue(undefined);
 
       // Act
-      const result = await service.delete(drugId);
+      const result = await service.delete(roomId);
 
       // Assert
-      expect(repository.deleteById).toHaveBeenCalledWith(drugId);
-      expect(result).toBe(`Berhasil menghapus obat: ${drugId}`);
+      expect(repository.deleteById).toHaveBeenCalledWith(roomId);
+      expect(result).toBe(`Berhasil menghapus ruangan: ${roomId}`);
     });
 
     it('should handle not found errors on delete', async () => {
