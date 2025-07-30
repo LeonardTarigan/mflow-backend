@@ -14,7 +14,11 @@ import {
 } from '@nestjs/common';
 import { ApiResponse } from 'src/common/api.model';
 
-import { CreateDrugDto, DrugEntity, UpdateDrugDto } from './drug.model';
+import {
+  CreateDrugDto,
+  DrugEntity,
+  UpdateDrugDto,
+} from './domain/model/drug.model';
 import { DrugService } from './drug.service';
 
 @Controller('/api/drugs')
@@ -33,7 +37,7 @@ export class DrugController {
   @HttpCode(HttpStatus.OK)
   async getAll(
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
-    @Query('pageSize', new DefaultValuePipe(10), ParseIntPipe) pageSize: number,
+    @Query('pageSize', new ParseIntPipe({ optional: true })) pageSize: number,
     @Query('search') search: string,
   ): Promise<ApiResponse<DrugEntity[]>> {
     const { data, meta } = await this.drugService.getAll(

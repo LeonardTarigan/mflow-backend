@@ -1,47 +1,36 @@
-import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Inject, Injectable } from '@nestjs/common';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
-import { PrismaService } from 'src/common/prisma.service';
-import { ValidationService } from 'src/common/validation.service';
+import { handlePrismaError } from 'src/common/prisma-error.handler';
 import { Logger } from 'winston';
 
 import {
   CreateDrugDto,
+  CreateDrugResponse,
   DrugEntity,
   GetAllDrugsResponse,
   UpdateDrugDto,
-} from './drug.model';
-import { DrugValidation } from './drug.validation';
+  UpdateDrugResponse,
+} from './domain/model/drug.model';
+import { DrugRepository } from './infrastucture/drug.repository';
 
 @Injectable()
 export class DrugService {
   constructor(
     @Inject(WINSTON_MODULE_PROVIDER) private logger: Logger,
-    private validationService: ValidationService,
-    private prismaService: PrismaService,
+    private drugRepository: DrugRepository,
   ) {}
 
-  async create(dto: CreateDrugDto): Promise<DrugEntity> {
+  async create(dto: CreateDrugDto): Promise<CreateDrugResponse> {
     this.logger.info(`DrugService.add(${JSON.stringify(dto)})`);
 
-    const validatedReq = this.validationService.validate<CreateDrugDto>(
-      DrugValidation.ADD,
-      dto,
-    );
-
     try {
-      const res = await this.prismaService.drug.create({
-        data: validatedReq,
-      });
+      const res = await this.drugRepository.create(dto);
 
       return res;
     } catch (error) {
-      if (error.code === 'P2002') {
-        throw new HttpException(
-          `Obat dengan nama ${validatedReq.name} sudah ada!`,
-          HttpStatus.BAD_REQUEST,
-        );
-      }
+      handlePrismaError(error, this.logger, {
+        P2002: `Obat dengan nama ${dto.name} sudah terdaftar!`,
+      });
 
       throw error;
     }
@@ -49,80 +38,58 @@ export class DrugService {
 
   async getAll(
     pageNumber: number,
-    pageSize: number,
+    pageSize?: number,
     search?: string,
   ): Promise<GetAllDrugsResponse> {
     this.logger.info(
       `DrugService.getAll(page=${pageNumber}, search=${search}), pageSize=${pageSize}`,
     );
 
-    const offset = (pageNumber - 1) * pageSize;
-
     if (pageNumber < 1) pageNumber = 1;
 
-    const searchFilter: Prisma.DrugWhereInput | undefined = search
-      ? {
-          OR: [
-            { name: { contains: search, mode: Prisma.QueryMode.insensitive } },
-            { unit: { contains: search, mode: Prisma.QueryMode.insensitive } },
-          ],
-        }
-      : undefined;
+    const offset = (pageNumber - 1) * pageSize;
 
-    const [drugs, totalData] = await this.prismaService.$transaction([
-      this.prismaService.drug.findMany({
-        skip: offset,
-        take: pageSize,
-        where: searchFilter,
-        orderBy: {
-          name: 'asc',
-        },
-      }),
-      this.prismaService.drug.count({
-        where: searchFilter,
-      }),
-    ]);
+    let drugs: DrugEntity[];
+    let totalData: number;
+
+    if (pageSize) {
+      [drugs, totalData] = await this.drugRepository.findManyWithPagination(
+        offset,
+        pageSize,
+        search,
+      );
+    } else {
+      [drugs, totalData] = await this.drugRepository.findMany(search);
+    }
 
     const totalPage = Math.ceil(totalData / pageSize);
-    const previousPage = pageNumber > 1 ? pageNumber - 1 : null;
-    const nextPage = pageNumber < totalPage ? pageNumber + 1 : null;
 
     return {
       data: drugs,
       meta: {
         current_page: pageNumber,
-        previous_page: previousPage,
-        next_page: nextPage,
+        previous_page: pageNumber > 1 ? pageNumber - 1 : null,
+        next_page: pageNumber < totalPage ? pageNumber + 1 : null,
         total_page: totalPage,
         total_data: totalData,
       },
     };
   }
 
-  async update(id: number, dto: UpdateDrugDto): Promise<DrugEntity> {
+  async update(id: number, dto: UpdateDrugDto): Promise<UpdateDrugResponse> {
     this.logger.info(
       `DrugService.update(id=${id}, dto=${JSON.stringify(dto)})`,
     );
 
-    const request = this.validationService.validate<UpdateDrugDto>(
-      DrugValidation.UPDATE,
-      dto,
-    );
-
     try {
-      const res = await this.prismaService.drug.update({
-        where: { id },
-        data: request,
-      });
+      const res = await this.drugRepository.update(id, dto);
 
       return res;
     } catch (error) {
-      if (error.code === 'P2025') {
-        throw new HttpException(
-          'Data obat tidak ditemukan!',
-          HttpStatus.NOT_FOUND,
-        );
-      }
+      handlePrismaError(error, this.logger, {
+        P2025: 'Data obat tidak ditemukan',
+      });
+
       throw error;
     }
   }
@@ -131,18 +98,14 @@ export class DrugService {
     this.logger.info(`DrugService.delete(${id})`);
 
     try {
-      const drug = await this.prismaService.drug.delete({
-        where: { id },
+      await this.drugRepository.deleteById(id);
+
+      return `Berhasil menghapus obat: ${id}`;
+    } catch (error) {
+      handlePrismaError(error, this.logger, {
+        P2025: 'Data akun tidak ditemukan',
       });
 
-      return `Berhasil menghapus obat ${drug.name}`;
-    } catch (error) {
-      if (error.code === 'P2025') {
-        throw new HttpException(
-          'Data obat tidak ditemukan!',
-          HttpStatus.NOT_FOUND,
-        );
-      }
       throw error;
     }
   }
