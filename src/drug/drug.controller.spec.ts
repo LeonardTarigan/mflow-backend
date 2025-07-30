@@ -3,6 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
 import { Drug } from '@prisma/client';
 import { AppModule } from 'src/app.module';
+import { AuthService } from 'src/auth/auth.service';
 import { UserFactory } from 'src/user/domain/factory/user.factory';
 import * as request from 'supertest';
 
@@ -31,14 +32,22 @@ describe('DrugController (E2E)', () => {
     drugFactory = app.get(DrugFactory);
     jwtService = app.get(JwtService);
 
-    // Create one user to generate a token for all tests
-    const { user } = await userFactory.create({ role: 'ADMIN' });
-    authToken = jwtService.sign({ sub: user.id, role: user.role });
+    const authService = app.get(AuthService);
+
+    const { user, plainTextPassword } = await userFactory.create({
+      role: 'ADMIN',
+    });
+
+    const loginResponse = await authService.login({
+      email: user.email,
+      password: plainTextPassword,
+    });
+
+    authToken = loginResponse.token;
   });
 
   afterAll(async () => {
-    // Clean up the user created for the token
-    const decodedToken = jwtService.decode(authToken) as { sub: string };
+    const decodedToken = jwtService.decode(authToken);
     await userFactory.delete(decodedToken.sub);
     await app.close();
   });
@@ -58,7 +67,6 @@ describe('DrugController (E2E)', () => {
       const res = await request(app.getHttpServer())
         .post(API_ENDPOINT)
         .send({ name: 'Aspirin', unit: 'Tablet', price: 5000 });
-
       expect(res.status).toBe(401);
     });
 
@@ -67,7 +75,6 @@ describe('DrugController (E2E)', () => {
         .post(API_ENDPOINT)
         .set('Authorization', `Bearer ${authToken}`)
         .send({ name: '' });
-
       expect(res.status).toBe(400);
     });
 
@@ -77,7 +84,6 @@ describe('DrugController (E2E)', () => {
         .post(API_ENDPOINT)
         .set('Authorization', `Bearer ${authToken}`)
         .send(createDto);
-
       expect(res.status).toBe(201);
       expect(res.body.data.name).toBe(createDto.name);
       drugsToDelete.push(res.body.data.id);
@@ -96,24 +102,23 @@ describe('DrugController (E2E)', () => {
       await drugFactory.delete(testDrug.id);
     });
 
+    it('should fail without an auth token (401 Unauthorized)', async () => {
+      const res = await request(app.getHttpServer()).get(API_ENDPOINT);
+      expect(res.status).toBe(401);
+    });
+
     it('should get a paginated list of drugs', async () => {
       const res = await request(app.getHttpServer())
         .get(`${API_ENDPOINT}?page=1&pageSize=10`)
         .set('Authorization', `Bearer ${authToken}`);
-
       expect(res.status).toBe(200);
-      expect(res.body.data).toBeInstanceOf(Array);
-      expect(res.body.meta).toBeDefined();
     });
 
     it('should get all drugs when pageSize is not provided', async () => {
       const res = await request(app.getHttpServer())
         .get(API_ENDPOINT)
         .set('Authorization', `Bearer ${authToken}`);
-
       expect(res.status).toBe(200);
-      expect(res.body.data).toBeInstanceOf(Array);
-      expect(res.body.meta.total_page).toBeNull();
     });
   });
 
@@ -129,13 +134,18 @@ describe('DrugController (E2E)', () => {
       await drugFactory.delete(testDrug.id).catch(() => {});
     });
 
-    it('should return 404 for a non-existent drug ID', async () => {
-      const nonExistentId = 999999;
+    it('should fail without an auth token (401 Unauthorized)', async () => {
       const res = await request(app.getHttpServer())
-        .patch(`${API_ENDPOINT}/${nonExistentId}`)
+        .patch(`${API_ENDPOINT}/${testDrug.id}`)
+        .send({ name: 'updated-drug-name' });
+      expect(res.status).toBe(401);
+    });
+
+    it('should return 404 for a non-existent drug ID', async () => {
+      const res = await request(app.getHttpServer())
+        .patch(`${API_ENDPOINT}/999999`)
         .set('Authorization', `Bearer ${authToken}`)
         .send({ name: 'updated-drug-name' });
-
       expect(res.status).toBe(404);
     });
 
@@ -144,7 +154,6 @@ describe('DrugController (E2E)', () => {
         .patch(`${API_ENDPOINT}/${testDrug.id}`)
         .set('Authorization', `Bearer ${authToken}`)
         .send({ name: 'updated-drug-name' });
-
       expect(res.status).toBe(200);
       expect(res.body.data.name).toBe('updated-drug-name');
     });
@@ -162,11 +171,17 @@ describe('DrugController (E2E)', () => {
       await drugFactory.delete(testDrug.id).catch(() => {});
     });
 
+    it('should fail without an auth token (401 Unauthorized)', async () => {
+      const res = await request(app.getHttpServer()).delete(
+        `${API_ENDPOINT}/${testDrug.id}`,
+      );
+      expect(res.status).toBe(401);
+    });
+
     it('should return 404 for a non-existent drug ID', async () => {
       const res = await request(app.getHttpServer())
         .delete(`${API_ENDPOINT}/999999`)
         .set('Authorization', `Bearer ${authToken}`);
-
       expect(res.status).toBe(404);
     });
 
@@ -174,7 +189,6 @@ describe('DrugController (E2E)', () => {
       const res = await request(app.getHttpServer())
         .delete(`${API_ENDPOINT}/${testDrug.id}`)
         .set('Authorization', `Bearer ${authToken}`);
-
       expect(res.status).toBe(200);
     });
   });

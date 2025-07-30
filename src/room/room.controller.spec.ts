@@ -3,6 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
 import { Room } from '@prisma/client';
 import { AppModule } from 'src/app.module';
+import { AuthService } from 'src/auth/auth.service';
 import { UserFactory } from 'src/user/domain/factory/user.factory';
 import * as request from 'supertest';
 
@@ -31,8 +32,18 @@ describe('RoomController (E2E)', () => {
     roomFactory = app.get(RoomFactory);
     jwtService = app.get(JwtService);
 
-    const { user } = await userFactory.create({ role: 'ADMIN' });
-    authToken = jwtService.sign({ sub: user.id, role: user.role });
+    const authService = app.get(AuthService);
+
+    const { user, plainTextPassword } = await userFactory.create({
+      role: 'ADMIN',
+    });
+
+    const loginResponse = await authService.login({
+      email: user.email,
+      password: plainTextPassword,
+    });
+
+    authToken = loginResponse.token;
   });
 
   afterAll(async () => {

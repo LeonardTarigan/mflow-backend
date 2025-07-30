@@ -8,6 +8,7 @@ import { ConfigService } from '@nestjs/config';
 import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 import { Request } from 'express';
+import { UserService } from 'src/user/user.service';
 
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
 
@@ -17,6 +18,7 @@ export class AuthGuard implements CanActivate {
     private jwtService: JwtService,
     private configService: ConfigService,
     private reflector: Reflector,
+    private userService: UserService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -41,12 +43,20 @@ export class AuthGuard implements CanActivate {
       const payload = await this.jwtService.verifyAsync(token, {
         secret: this.configService.get('JWT_SECRET'),
       });
-      request['user'] = payload;
+
+      const user = await this.userService.getById(payload.sub);
+
+      if (!user) {
+        throw new UnauthorizedException('Akses ditolak. Akun tidak ditemukan.');
+      }
+
+      request.user = user;
     } catch {
       throw new UnauthorizedException(
         'Akses ditolak. Izin untuk mengakses sumber daya ini tidak tersedia.',
       );
     }
+
     return true;
   }
 
