@@ -27,7 +27,7 @@ export class RoomController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  async add(@Body() dto: CreateRoomDto): Promise<ApiResponse<RoomEntity>> {
+  async create(@Body() dto: CreateRoomDto): Promise<ApiResponse<RoomEntity>> {
     const data = await this.roomService.create(dto);
 
     return { data };

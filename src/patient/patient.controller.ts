@@ -1,10 +1,12 @@
 import {
   Body,
   Controller,
+  DefaultValuePipe,
   Get,
   HttpCode,
   HttpStatus,
   Param,
+  ParseIntPipe,
   Patch,
   Post,
   Query,
@@ -12,11 +14,10 @@ import {
 import { ApiResponse } from 'src/common/api.model';
 
 import {
-  AddPatientDto,
-  AddPatientResponse,
-  PatientDetail,
+  CreatePatientDto,
+  PatientEntity,
   UpdatePatientDto,
-} from './patient.model';
+} from './domain/model/patient.model';
 import { PatientService } from './patient.service';
 
 @Controller('/api/patients')
@@ -25,27 +26,25 @@ export class PatientController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  async add(
-    @Body() dto: AddPatientDto,
-  ): Promise<ApiResponse<AddPatientResponse>> {
-    const res = await this.patientService.add(dto);
+  async create(
+    @Body() dto: CreatePatientDto,
+  ): Promise<ApiResponse<PatientEntity>> {
+    const data = await this.patientService.create(dto);
 
-    return { data: res };
+    return { data };
   }
 
   @Get()
   @HttpCode(HttpStatus.OK)
   async getAll(
-    @Query('page') page: string,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('pageSize', new ParseIntPipe({ optional: true })) pageSize: number,
     @Query('search') search: string,
-    @Query('pageSize') pageSize: string,
-  ): Promise<ApiResponse<PatientDetail[]>> {
-    const parsedPageSize = pageSize ? parseInt(pageSize, 10) : undefined;
-
+  ): Promise<ApiResponse<PatientEntity[]>> {
     const { data, meta } = await this.patientService.getAll(
       page,
+      pageSize,
       search,
-      parsedPageSize,
     );
 
     return {
@@ -58,9 +57,10 @@ export class PatientController {
   @HttpCode(HttpStatus.OK)
   async getByMrNumber(
     @Param('mrNumber') mrNumber: string,
-  ): Promise<ApiResponse<PatientDetail>> {
-    const res = await this.patientService.getByMrNumber(mrNumber);
-    return { data: res };
+  ): Promise<ApiResponse<PatientEntity>> {
+    const data = await this.patientService.getByMrNumber(mrNumber);
+
+    return { data };
   }
 
   @Patch('/:id')
@@ -68,11 +68,9 @@ export class PatientController {
   async update(
     @Param('id') id: string,
     @Body() dto: UpdatePatientDto,
-  ): Promise<ApiResponse<PatientDetail>> {
-    const res = await this.patientService.update(id, dto);
+  ): Promise<ApiResponse<PatientEntity>> {
+    const data = await this.patientService.update(id, dto);
 
-    return {
-      data: res,
-    };
+    return { data };
   }
 }
