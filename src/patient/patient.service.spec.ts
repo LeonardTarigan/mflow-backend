@@ -73,19 +73,17 @@ describe('PatientService', () => {
   describe('create()', () => {
     it(' should successfully create a user ', async () => {
       // Arrange
-      const dtoWithDateString: CreatePatientPayload = {
+      const dtoWithDateIsoString: CreatePatientPayload = {
         ...mockCreateDto,
-        birth_date: '2001-10-12',
+        birth_date: new Date(mockCreateDto.birth_date).toISOString(),
       };
       repository.create.mockResolvedValue(mockPatient);
 
       // Act
-      const result = await service.create(
-        dtoWithDateString as unknown as CreatePatientDto,
-      );
+      const result = await service.create(mockCreateDto);
 
       // Assert
-      expect(repository.create).toHaveBeenCalledWith(dtoWithDateString);
+      expect(repository.create).toHaveBeenCalledWith(dtoWithDateIsoString);
       expect(result).toEqual(mockPatient);
     });
 
