@@ -17,7 +17,7 @@ COPY . .
 
 RUN pnpm build
 
-RUN pnpm prune --prod
+RUN pnpm prune --prod --ignore-scripts
 
 # === Production ===
 FROM node:20-alpine
