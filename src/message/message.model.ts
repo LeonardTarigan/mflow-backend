@@ -1,10 +1,5 @@
-import { Gender } from '@prisma/client';
-
 export class GenerateMedicalCardDto {
   medical_record_number: string;
-  name: string;
-  phone_number: string;
-  gender: Gender;
 }
 
 export class GenerateInvoiceDto {

@@ -1,6 +1,7 @@
-import { HttpException, Inject, Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { TDocumentDefinitions } from 'pdfmake/interfaces';
+import { PrismaService } from 'src/common/prisma.service';
 import { ValidationService } from 'src/common/validation.service';
 import { Logger } from 'winston';
 
@@ -10,8 +11,9 @@ import { MessageValidation } from './message.validation';
 @Injectable()
 export class MessageService {
   constructor(
-    private validationService: ValidationService,
     @Inject(WINSTON_MODULE_PROVIDER) private logger: Logger,
+    private validationService: ValidationService,
+    private prismaService: PrismaService,
   ) {}
 
   // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -34,7 +36,9 @@ export class MessageService {
 
   async uploadToWhatsapp(buffer: Buffer): Promise<string> {
     const formData = new FormData();
-    const blob = new Blob([buffer], { type: 'application/pdf' });
+    const blob = new Blob([new Uint8Array(buffer)], {
+      type: 'application/pdf',
+    });
     formData.append('file', blob, 'mr-card.pdf');
     formData.append('type', 'application/pdf');
     formData.append('messaging_product', 'whatsapp');
@@ -61,110 +65,130 @@ export class MessageService {
       dto,
     );
 
+    const patient = await this.prismaService.patient.findUnique({
+      where: { medical_record_number: dto.medical_record_number },
+    });
+
+    if (!patient) {
+      throw new HttpException(
+        'Data pasien tidak ditemukan',
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
     const docDefinition: TDocumentDefinitions = {
-      pageSize: { width: 540, height: 340 },
-      pageMargins: [20, 20, 20, 20],
+      pageSize: { width: 759, height: 479 },
+      pageMargins: 50,
       content: [
         {
-          text: 'Klinik Pratama Millenium',
-          bold: true,
-          fontSize: 16,
-          alignment: 'center',
-          marginBottom: 3,
-          color: '#990100',
+          image: 'bg',
+          width: 400,
+          height: 479,
+          absolutePosition: { x: 359 },
         },
         {
-          text: 'Jl. Kapten Muslim No.18C, Sei Sikambing C. II, Kec. Medan Helvetia, Kota Medan, Sumatera Utara 20118',
-          alignment: 'center',
-          fontSize: 10,
-          marginBottom: 2,
+          image: 'logo',
+          width: 175.5,
+          height: 36,
+          margin: [30, 30, 0, 0],
         },
         {
-          text: '+62 813-7747-1625 • klinikmillenium@gmail.com • @millenium_klinik',
-          alignment: 'center',
-          fontSize: 10,
-          marginBottom: 10,
-        },
-        {
-          canvas: [
+          stack: [
             {
-              type: 'line',
-              x1: 0,
-              y1: 0,
-              x2: 500,
-              y2: 0,
-              lineWidth: 1,
-              lineColor: '#000000',
+              text: 'Kartu Berobat',
+              fontSize: 28,
+              bold: true,
+              color: '#222',
+              margin: [0, 30, 0, 0],
+            },
+            {
+              text: dto.medical_record_number || '',
+              fontSize: 24,
+              color: '#696A6E',
+              margin: [0, 10, 0, 0],
             },
           ],
-          marginBottom: 15,
+          margin: [30, 40, 0, 0],
         },
-        {
-          text: 'KARTU BEROBAT',
-          alignment: 'center',
-          bold: true,
-          fontSize: 20,
-          font: 'FigtreeBlack',
-          color: '#990100',
-        },
-        { text: '', margin: [0, 0, 0, 70] },
         {
           columns: [
             {
+              width: 10,
+              canvas: [
+                {
+                  type: 'line',
+                  x1: 0,
+                  y1: 0,
+                  x2: 0,
+                  y2: 70,
+                  lineWidth: 4,
+                  lineColor: '#990100',
+                },
+              ],
+              margin: [30, 20, 0, 0],
+            },
+            {
+              width: '*',
               table: {
-                widths: [60, 10, '*'],
+                widths: [80, 10, '*'],
                 body: [
-                  ['No. MR', ':', dto.medical_record_number],
-                  ['Nama', ':', dto.name],
+                  ['Nama', ':', patient.name],
                   [
                     'Kelamin',
                     ':',
-                    dto.gender === 'MALE' ? 'Laki-laki' : 'Perempuan',
+                    patient.gender === 'MALE' ? 'Laki-laki' : 'Perempuan',
                   ],
-                  ['No. HP', ':', dto.phone_number],
+                  ['No. HP', ':', patient.phone_number],
                 ],
               },
               layout: 'noBorders',
-              fontSize: 14,
-              marginTop: 44,
-            },
-            {
-              stack: [
-                {
-                  qr: dto.medical_record_number,
-                },
-              ],
-              alignment: 'right',
-              margin: [0, 20, 0, 0],
+              fontSize: 19.5,
+              color: '#696A6E',
+              margin: [0, 14, 0, 0],
             },
           ],
-          columnGap: 10,
+          columnGap: 40,
+          marginTop: 40,
         },
       ],
-      styles: {
-        header: {
-          fontSize: 18,
-          bold: true,
-        },
+      images: {
+        logo: `${process.cwd()}/images/brand-logo.png`,
+        bg: `${process.cwd()}/images/medical-card-bg.png`,
       },
       defaultStyle: {
         font: 'Figtree',
       },
     };
-    const pdfDoc = this.printer.createPdfKitDocument(docDefinition);
-    const chunks: Buffer[] = [];
-    return new Promise((resolve, reject) => {
-      pdfDoc.on('data', (chunk) => chunks.push(chunk));
-      pdfDoc.on('end', () => resolve(Buffer.concat(chunks)));
-      pdfDoc.on('error', reject);
-      pdfDoc.end();
-    });
+
+    try {
+      const pdfDoc = this.printer.createPdfKitDocument(docDefinition);
+      const chunks: Buffer[] = [];
+      return new Promise((resolve, reject) => {
+        pdfDoc.on('data', (chunk) => chunks.push(chunk));
+        pdfDoc.on('end', () => resolve(Buffer.concat(chunks)));
+        pdfDoc.on('error', reject);
+        pdfDoc.end();
+      });
+    } catch (error) {
+      console.error(error);
+    }
   }
 
   async sendMedicalCardMessage(dto: GenerateMedicalCardDto): Promise<void> {
     try {
       const buffer = await this.generateMedicalCardBuffer(dto);
       const mediaId = await this.uploadToWhatsapp(buffer);
+
+      const patient = await this.prismaService.patient.findUnique({
+        where: { medical_record_number: dto.medical_record_number },
+      });
+
+      if (!patient) {
+        throw new HttpException(
+          'Data pasien tidak ditemukan',
+          HttpStatus.NOT_FOUND,
+        );
+      }
 
       const docPromise = fetch(`${this.WHATSAPP_API_BASE_URL}/messages`, {
         method: 'POST',
@@ -174,11 +198,11 @@ export class MessageService {
         },
         body: JSON.stringify({
           messaging_product: 'whatsapp',
-          to: dto.phone_number,
+          to: patient.phone_number,
           type: 'document',
           document: {
             id: mediaId,
-            filename: 'Kartu Berobat.pdf',
+            filename: `Kartu Berobat - ${patient.name}.pdf`,
           },
         }),
       });
