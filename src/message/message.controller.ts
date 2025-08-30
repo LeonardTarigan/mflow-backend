@@ -8,12 +8,16 @@ import {
 } from '@nestjs/common';
 import { Response } from 'express';
 
-import { GenerateMedicalCardDto } from './message.model';
+import { FileGenerationService } from './domain/file-generation/file-generation.service';
+import { GenerateMedicalCardDto } from './domain/model/message.model';
 import { MessageService } from './message.service';
 
 @Controller('/api/messages')
 export class MessageController {
-  constructor(private messageService: MessageService) {}
+  constructor(
+    private messageService: MessageService,
+    private fileGenerationService: FileGenerationService,
+  ) {}
 
   @Post('/medical-cards')
   @HttpCode(HttpStatus.OK)
@@ -29,7 +33,8 @@ export class MessageController {
     @Body() dto: GenerateMedicalCardDto,
     @Res() res: Response,
   ): Promise<void> {
-    const buffer = await this.messageService.generateMedicalCardBuffer(dto);
+    const { buffer } =
+      await this.fileGenerationService.generateMedicalCardPdf(dto);
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader(
       'Content-Disposition',
