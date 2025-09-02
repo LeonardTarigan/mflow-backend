@@ -17,7 +17,7 @@ export class GenerateMedicalCardDto {
   medical_record_number: string;
 }
 
-export class InvoiceItem {
+export class ReceiptItem {
   @IsString()
   @IsNotEmpty()
   name: string;
@@ -31,14 +31,16 @@ export class InvoiceItem {
   price: number;
 }
 
-export class GenerateInvoiceDto {
+export class GenerateReceiptDto {
   @IsString()
   @IsNotEmpty()
   session_date: string;
 
   @IsString()
-  @IsNotEmpty()
-  patient_name: string;
+  @Matches(/^\d{2}\.\d{2}\.\d{2}$/, {
+    message: 'Medical record number must be in the format XX.XX.XX',
+  })
+  medical_record_number: string;
 
   @IsString()
   @IsNotEmpty()
@@ -47,12 +49,12 @@ export class GenerateInvoiceDto {
   @IsArray()
   @IsNotEmpty()
   @ValidateNested({ each: true })
-  @Type(() => InvoiceItem)
-  treatment_list: InvoiceItem[];
+  @Type(() => ReceiptItem)
+  treatment_list: ReceiptItem[];
 
   @IsArray()
   @IsNotEmpty()
   @ValidateNested({ each: true })
-  @Type(() => InvoiceItem)
-  drug_order_list: InvoiceItem[];
+  @Type(() => ReceiptItem)
+  drug_order_list: ReceiptItem[];
 }

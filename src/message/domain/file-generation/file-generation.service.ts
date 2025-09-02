@@ -1,8 +1,12 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { Patient } from '@prisma/client';
 import { TDocumentDefinitions } from 'pdfmake/interfaces';
-import { PrismaService } from 'src/common/prisma.service';
-import { GenerateMedicalCardDto } from 'src/message/domain/model/message.model';
+import {
+  GenerateMedicalCardDto,
+  GenerateReceiptDto,
+} from 'src/message/domain/model/message.model';
+import { PatientEntity } from 'src/patient/domain/model/patient.model';
+import { PatientRepository } from 'src/patient/infrastucture/patient.repository';
 
 @Injectable()
 export class FileGenerationService {
@@ -10,7 +14,7 @@ export class FileGenerationService {
   private PdfPrinter = require('pdfmake');
   private printer;
 
-  constructor(private readonly prismaService: PrismaService) {
+  constructor(private readonly patientRepository: PatientRepository) {
     const fonts = {
       Figtree: {
         normal: 'fonts/Figtree-Regular.ttf',
@@ -23,10 +27,10 @@ export class FileGenerationService {
 
   async generateMedicalCardPdf(
     dto: GenerateMedicalCardDto,
-  ): Promise<{ buffer: Buffer; patient: Patient }> {
-    const patient = await this.prismaService.patient.findUnique({
-      where: { medical_record_number: dto.medical_record_number },
-    });
+  ): Promise<{ buffer: Buffer; patient: PatientEntity }> {
+    const patient = await this.patientRepository.findByMrNumber(
+      dto.medical_record_number,
+    );
 
     if (!patient) {
       throw new HttpException('Patient data not found', HttpStatus.NOT_FOUND);
@@ -139,5 +143,19 @@ export class FileGenerationService {
         font: 'Figtree',
       },
     };
+  }
+
+  async generateReciptPdf(
+    dto: GenerateReceiptDto,
+  ): Promise<{ buffer: Buffer; patient: PatientEntity }> {
+    const patient = await this.patientRepository.findByMrNumber(
+      dto.medical_record_number,
+    );
+
+    if (!patient) {
+      throw new HttpException('Patient data not found', HttpStatus.NOT_FOUND);
+    }
+
+    return null;
   }
 }
