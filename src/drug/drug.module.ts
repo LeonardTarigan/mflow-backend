@@ -7,5 +7,6 @@ import { DrugRepository } from './infrastucture/drug.repository';
 @Module({
   providers: [DrugService, DrugRepository],
   controllers: [DrugController],
+  exports: [DrugService],
 })
 export class DrugModule {}

@@ -21,6 +21,10 @@ export class DrugEntity {
 
   @IsInt()
   @Min(0)
+  stock: number;
+
+  @IsInt()
+  @Min(0)
   amount_sold: number;
 
   @IsString()
@@ -46,6 +50,7 @@ export class UpdateDrugDto extends PartialType(CreateDrugDto) {
 
 export class CreateDrugResponse extends DrugEntity {}
 export class UpdateDrugResponse extends DrugEntity {}
+export class GetDrugByIdResponse extends DrugEntity {}
 
 export class GetAllDrugsResponse {
   data: DrugEntity[];

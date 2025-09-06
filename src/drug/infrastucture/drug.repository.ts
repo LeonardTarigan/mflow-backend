@@ -54,8 +54,8 @@ export class DrugRepository {
     ]);
   }
 
-  async count(where?: Prisma.DrugWhereInput): Promise<number> {
-    return this.prisma.drug.count({ where });
+  async findById(id: number): Promise<Drug | null> {
+    return this.prisma.drug.findUnique({ where: { id } });
   }
 
   async update(id: number, data: Prisma.DrugUpdateInput): Promise<Drug> {

@@ -18,11 +18,19 @@ export class DrugOrderEntity {
   @Min(1)
   quantity: number;
 
+  @IsNumber()
+  @IsNotEmpty()
+  @Min(0)
+  applied_price: number;
+
   @IsString()
   @IsNotEmpty()
   dose: string;
 }
 
-export class CreateDrugOrderDto extends OmitType(DrugOrderEntity, ['id']) {}
+export class CreateDrugOrderDto extends OmitType(DrugOrderEntity, [
+  'id',
+  'applied_price',
+] as const) {}
 
 export class CreateDrugOrderResponse extends DrugOrderEntity {}

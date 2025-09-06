@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { handlePrismaError } from 'src/common/prisma-error.handler';
 import { Logger } from 'winston';
@@ -8,6 +8,7 @@ import {
   CreateDrugResponse,
   DrugEntity,
   GetAllDrugsResponse,
+  GetDrugByIdResponse,
   UpdateDrugDto,
   UpdateDrugResponse,
 } from './domain/model/drug.model';
@@ -74,6 +75,20 @@ export class DrugService {
         total_data: totalData,
       },
     };
+  }
+
+  async getById(id: number): Promise<GetDrugByIdResponse> {
+    this.logger.info(`DrugService.getById(${id})`);
+
+    const treatment = await this.drugRepository.findById(id);
+
+    if (!treatment)
+      throw new HttpException(
+        'Data obat tidak ditemukan!',
+        HttpStatus.NOT_FOUND,
+      );
+
+    return treatment;
   }
 
   async update(id: number, dto: UpdateDrugDto): Promise<UpdateDrugResponse> {
