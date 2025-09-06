@@ -2,7 +2,7 @@ import { Gender, QueueStatus } from '@prisma/client';
 import { Decimal } from '@prisma/client/runtime/library';
 import { ResponseMeta } from 'src/common/api.model';
 import { PatientEntity } from 'src/patient/domain/model/patient.model';
-import { Treatment } from 'src/treatment/treatment.model';
+import { TreatmentEntity } from 'src/treatment/domain/model/treatment.model';
 
 class PatientData {
   name: string;
@@ -62,7 +62,7 @@ export class GetAllQueuesDetail extends BaseQueue {
     dose: string;
     unit: string;
   }[];
-  treatments: Omit<Treatment, 'created_at' | 'updated_at'>[];
+  treatments: Omit<TreatmentEntity, 'created_at' | 'updated_at'>[];
 }
 
 export class GetAllQueuesResponse {

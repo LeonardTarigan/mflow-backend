@@ -1,218 +1,131 @@
 import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
-import { PrismaService } from 'src/common/prisma.service';
-import { ValidationService } from 'src/common/validation.service';
+import { handlePrismaError } from 'src/common/prisma-error.handler';
 import { Logger } from 'winston';
 
 import {
-  AddSessionTreatmentDto,
-  AddSessionTreatmentResponse,
-  AddTreatmentDto,
-  AddTreatmentResponse,
+  CreateTreatmentDto,
+  CreateTreatmentResponse,
   GetAllTreatmentsResponse,
-  Treatment,
+  GetTreatmentByIdResponse,
+  TreatmentEntity,
   UpdateTreatmentDto,
-} from './treatment.model';
-import { TreatmentValidation } from './treatment.validation';
+  UpdateTreatmentResponse,
+} from './domain/model/treatment.model';
+import { TreatmentRepository } from './infrastructure/treatment.repository';
 
 @Injectable()
 export class TreatmentService {
   constructor(
-    private validationService: ValidationService,
     @Inject(WINSTON_MODULE_PROVIDER) private logger: Logger,
-    private prismaService: PrismaService,
+    private treatmentRepository: TreatmentRepository,
   ) {}
 
-  async add(dto: AddTreatmentDto): Promise<AddTreatmentResponse> {
-    this.logger.info(`TreatmentService.add(${JSON.stringify(dto)})`);
+  async create(dto: CreateTreatmentDto): Promise<CreateTreatmentResponse> {
+    this.logger.info(`TreatmentService.create(${JSON.stringify(dto)})`);
 
-    const request = this.validationService.validate<AddTreatmentDto>(
-      TreatmentValidation.ADD,
-      dto,
-    );
+    try {
+      const res = await this.treatmentRepository.create(dto);
 
-    const res = await this.prismaService.treatment.create({
-      data: request,
-    });
+      return res;
+    } catch (error) {
+      handlePrismaError(error, this.logger, {
+        P2002: `Penanganan dengan nama ${dto.name} sudah terdaftar!`,
+      });
 
-    return res;
-  }
-
-  async addSessionTreatments(
-    dto: AddSessionTreatmentDto,
-  ): Promise<AddSessionTreatmentResponse[]> {
-    const request = this.validationService.validate<AddSessionTreatmentDto>(
-      TreatmentValidation.ADD_SESSION_TREATMENT,
-      dto,
-    );
-
-    const treatmentIds = request.treatments.map((t) => t.treatment_id);
-    const treatments = await this.prismaService.treatment.findMany({
-      where: { id: { in: treatmentIds } },
-      select: { id: true, price: true },
-    });
-    const priceMap = new Map<number, number>();
-    treatments.forEach((t) => priceMap.set(t.id, t.price));
-
-    const operations = request.treatments.map(({ treatment_id, quantity }) =>
-      this.prismaService.careSessionTreatment.create({
-        data: {
-          care_session_id: request.care_session_id,
-          treatment_id: treatment_id,
-          quantity,
-          applied_price: priceMap.get(treatment_id) ?? 0,
-        },
-      }),
-    );
-
-    const created = await this.prismaService.$transaction(operations);
-
-    return created.map(
-      ({ care_session_id, treatment_id, applied_price, quantity }) => ({
-        care_session_id,
-        treatment_id,
-        applied_price,
-        quantity,
-      }),
-    );
+      throw error;
+    }
   }
 
   async getAll(
-    page: string,
-    search?: string,
+    pageNumber: number,
     pageSize?: number,
+    search?: string,
   ): Promise<GetAllTreatmentsResponse> {
-    this.logger.info(`TreatmentService.getAll(page=${page}, search=${search})`);
-
-    let pageNumber = parseInt(page) || 1;
-
-    if (pageNumber == 0)
-      throw new HttpException('Invalid page data type', HttpStatus.BAD_REQUEST);
+    this.logger.info(
+      `TreatmentService.getAll(page=${pageNumber}, pageSize=${pageSize}, search=${search})`,
+    );
 
     if (pageNumber < 1) pageNumber = 1;
 
-    const searchFilter = search
-      ? {
-          OR: [
-            { name: { contains: search, mode: Prisma.QueryMode.insensitive } },
-          ],
-        }
-      : undefined;
-
-    if (!pageSize) {
-      const treatments = await this.prismaService.treatment.findMany({
-        where: searchFilter,
-        orderBy: {
-          name: 'asc',
-        },
-      });
-
-      return {
-        data: treatments,
-        meta: {
-          current_page: 1,
-          previous_page: null,
-          next_page: null,
-          total_page: 1,
-          total_data: treatments.length,
-        },
-      };
-    }
-
     const offset = (pageNumber - 1) * pageSize;
 
-    const [treatments, totalData] = await Promise.all([
-      this.prismaService.treatment.findMany({
-        skip: offset,
-        take: pageSize,
-        where: searchFilter,
-        orderBy: {
-          name: 'asc',
-        },
-      }),
-      this.prismaService.treatment.count({
-        where: searchFilter,
-      }),
-    ]);
+    let treatments: TreatmentEntity[];
+    let totalData: number;
+
+    if (pageSize) {
+      [treatments, totalData] =
+        await this.treatmentRepository.findManyWithPagination(
+          offset,
+          pageSize,
+          search,
+        );
+    } else {
+      [treatments, totalData] = await this.treatmentRepository.findMany(search);
+    }
 
     const totalPage = Math.ceil(totalData / pageSize);
-    const previousPage = pageNumber > 1 ? pageNumber - 1 : null;
-    const nextPage = pageNumber < totalPage ? pageNumber + 1 : null;
 
     return {
       data: treatments,
       meta: {
         current_page: pageNumber,
-        previous_page: previousPage,
-        next_page: nextPage,
+        previous_page: pageNumber > 1 ? pageNumber - 1 : null,
+        next_page: pageNumber < totalPage ? pageNumber + 1 : null,
         total_page: totalPage,
         total_data: totalData,
       },
     };
   }
 
-  async update(id: string, dto: UpdateTreatmentDto): Promise<Treatment> {
+  async getById(id: number): Promise<GetTreatmentByIdResponse> {
+    this.logger.info(`TreatementService.getById(${id})`);
+
+    const treatment = await this.treatmentRepository.findById(id);
+
+    if (!treatment)
+      throw new HttpException(
+        'Data penanganan tidak ditemukan!',
+        HttpStatus.NOT_FOUND,
+      );
+
+    return treatment;
+  }
+
+  async update(
+    id: number,
+    dto: UpdateTreatmentDto,
+  ): Promise<UpdateTreatmentResponse> {
     this.logger.info(
       `TreatmentService.update(id=${id}, dto=${JSON.stringify(dto)})`,
     );
 
-    const numericId = parseInt(id);
-
-    if (isNaN(numericId)) {
-      throw new HttpException('Invalid ID format', HttpStatus.BAD_REQUEST);
-    }
-
-    const request = this.validationService.validate<UpdateTreatmentDto>(
-      TreatmentValidation.UPDATE,
-      dto,
-    );
-
     try {
-      const res = await this.prismaService.treatment.update({
-        where: {
-          id: numericId,
-        },
-        data: request,
-      });
+      const res = await this.treatmentRepository.update(id, dto);
 
       return res;
     } catch (error) {
-      if (error.code === 'P2025') {
-        throw new HttpException(
-          'Data penanganan tidak ditemukan!',
-          HttpStatus.NOT_FOUND,
-        );
-      }
+      handlePrismaError(error, this.logger, {
+        P2025: 'Data penanganan tidak ditemukan',
+      });
+
       throw error;
     }
   }
 
-  async delete(id: string): Promise<string> {
+  async delete(id: number): Promise<string> {
     this.logger.info(`TreatmentService.delete(${id})`);
 
-    const numericId = parseInt(id);
-
-    if (isNaN(numericId)) {
-      throw new HttpException('Invalid ID format', HttpStatus.BAD_REQUEST);
-    }
-
     try {
-      await this.prismaService.treatment.delete({
-        where: {
-          id: numericId,
-        },
-      });
+      await this.treatmentRepository.deleteById(id);
+
+      return `Berhasil menghapus obat: ${id}`;
     } catch (error) {
-      if (error.code === 'P2025') {
-        throw new HttpException(
-          'Data penanganan tidak ditemukan!',
-          HttpStatus.NOT_FOUND,
-        );
-      }
+      handlePrismaError(error, this.logger, {
+        P2025: 'Data akun tidak ditemukan',
+      });
+
       throw error;
     }
-
-    return `Successfully deleted: ${id}`;
   }
 }

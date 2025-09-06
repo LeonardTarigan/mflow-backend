@@ -10,6 +10,7 @@ import { MessageModule } from './message/message.module';
 import { PatientModule } from './patient/patient.module';
 import { QueueModule } from './queue/queue.module';
 import { RoomModule } from './room/room.module';
+import { SessionTreatmentModule } from './session-treatment/session-treatment.module';
 import { TreatmentModule } from './treatment/treatment.module';
 import { UserModule } from './user/user.module';
 import { VitalSignModule } from './vital-sign/vital-sign.module';
@@ -29,6 +30,7 @@ import { VitalSignModule } from './vital-sign/vital-sign.module';
     TreatmentModule,
     MessageModule,
     MailModule,
+    SessionTreatmentModule,
   ],
   controllers: [],
   providers: [],

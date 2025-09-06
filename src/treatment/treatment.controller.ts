@@ -1,24 +1,24 @@
 import {
   Body,
   Controller,
+  DefaultValuePipe,
   Delete,
   Get,
   HttpCode,
   HttpStatus,
   Param,
+  ParseIntPipe,
   Patch,
   Post,
   Query,
 } from '@nestjs/common';
-import { Treatment } from '@prisma/client';
 import { ApiResponse } from 'src/common/api.model';
 
 import {
-  AddSessionTreatmentDto,
-  AddSessionTreatmentResponse,
-  AddTreatmentDto,
+  CreateTreatmentDto,
+  TreatmentEntity,
   UpdateTreatmentDto,
-} from './treatment.model';
+} from './domain/model/treatment.model';
 import { TreatmentService } from './treatment.service';
 
 @Controller('/api/treatments')
@@ -27,36 +27,25 @@ export class TreatmentController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  async add(
-    @Body() dto: AddTreatmentDto,
-  ): Promise<ApiResponse<AddTreatmentDto>> {
-    const res = await this.treatmentService.add(dto);
+  async create(
+    @Body() dto: CreateTreatmentDto,
+  ): Promise<ApiResponse<CreateTreatmentDto>> {
+    const res = await this.treatmentService.create(dto);
 
-    return { data: res };
-  }
-
-  @Post('/sessions')
-  @HttpCode(HttpStatus.CREATED)
-  async addToSession(
-    @Body() dto: AddSessionTreatmentDto,
-  ): Promise<ApiResponse<AddSessionTreatmentResponse[]>> {
-    const res = await this.treatmentService.addSessionTreatments(dto);
     return { data: res };
   }
 
   @Get()
   @HttpCode(HttpStatus.OK)
   async getAll(
-    @Query('page') page: string,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('pageSize', new ParseIntPipe({ optional: true })) pageSize: number,
     @Query('search') search: string,
-    @Query('pageSize') pageSize: string,
-  ): Promise<ApiResponse<Treatment[]>> {
-    const parsedPageSize = pageSize ? parseInt(pageSize, 10) : undefined;
-
+  ): Promise<ApiResponse<TreatmentEntity[]>> {
     const { data, meta } = await this.treatmentService.getAll(
       page,
+      pageSize,
       search,
-      parsedPageSize,
     );
 
     return {
@@ -68,9 +57,9 @@ export class TreatmentController {
   @Patch('/:id')
   @HttpCode(HttpStatus.OK)
   async update(
-    @Param('id') id: string,
+    @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateTreatmentDto,
-  ): Promise<ApiResponse<Treatment>> {
+  ): Promise<ApiResponse<TreatmentEntity>> {
     const res = await this.treatmentService.update(id, dto);
 
     return {
@@ -80,7 +69,9 @@ export class TreatmentController {
 
   @Delete('/:id')
   @HttpCode(HttpStatus.OK)
-  async delete(@Param('id') id: string): Promise<ApiResponse<string>> {
+  async delete(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<ApiResponse<string>> {
     const res = await this.treatmentService.delete(id);
 
     return {
