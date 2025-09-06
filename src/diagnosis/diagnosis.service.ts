@@ -1,106 +1,60 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
-import { PrismaService } from 'src/common/prisma.service';
-import { ValidationService } from 'src/common/validation.service';
+import { handlePrismaError } from 'src/common/prisma-error.handler';
 import { Logger } from 'winston';
 
 import {
-  AddDiagnosisDto,
-  AddDiagnosisResponse,
-  AddSessionDiagnosisDto,
-  AddSessionDiagnosisResponse,
+  CreateDiagnosisDto,
+  CreateDiagnosisResponse,
   GetAllDiagnosesResponse,
-} from './diagnosis.model';
-import { DiagnosisValidation } from './diagnosis.validation';
+  GetDiagnosisByIdResponse,
+} from './domain/model/diagnosis.model';
+import { DiagnosisRepository } from './infrastucture/diagnosis.repository';
 
 @Injectable()
 export class DiagnosisService {
   constructor(
-    private validationService: ValidationService,
     @Inject(WINSTON_MODULE_PROVIDER) private logger: Logger,
-    private prismaService: PrismaService,
+    private diagnosisRepository: DiagnosisRepository,
   ) {}
+
+  async create(dto: CreateDiagnosisDto): Promise<CreateDiagnosisResponse> {
+    this.logger.info(`DiagnosisService.add(${JSON.stringify(dto)})`);
+
+    try {
+      const res = await this.diagnosisRepository.create(dto);
+
+      return res;
+    } catch (error) {
+      handlePrismaError(error, this.logger, {
+        P2002: `Diagnosis dengan kode ${dto.id} sudah terdaftar!`,
+      });
+
+      throw error;
+    }
+  }
 
   async getAll(query: string): Promise<GetAllDiagnosesResponse> {
     this.logger.info(`DiagnosisService.getAll(query=${query})`);
 
-    const diagnoses = await this.prismaService.diagnosis.findMany({
-      where: {
-        OR: [
-          {
-            id: {
-              contains: query,
-              mode: 'insensitive',
-            },
-          },
-          {
-            name: {
-              contains: query,
-              mode: 'insensitive',
-            },
-          },
-        ],
-      },
-    });
+    const [diagnoses] = await this.diagnosisRepository.findMany(query);
 
     return {
       data: diagnoses,
     };
   }
 
-  async add(dto: AddDiagnosisDto): Promise<AddDiagnosisResponse> {
-    this.logger.info(`DiagnosisService.add(${JSON.stringify(dto)})`);
+  async getById(id: string): Promise<GetDiagnosisByIdResponse> {
+    this.logger.info(`TreatementService.getById(${id})`);
 
-    const request = this.validationService.validate<any>(
-      DiagnosisValidation.ADD,
-      dto,
-    );
+    const treatment = await this.diagnosisRepository.findById(id);
 
-    const res = await this.prismaService.diagnosis.create({
-      data: request,
-    });
-
-    return res;
-  }
-
-  async addSessionDiagnoses(
-    dto: AddSessionDiagnosisDto,
-  ): Promise<AddSessionDiagnosisResponse[]> {
-    const request = this.validationService.validate<AddSessionDiagnosisDto>(
-      DiagnosisValidation.ADD_SESSION_DIAGNOSIS,
-      dto,
-    );
-
-    let externalDiagnosisIds: string[] = [];
-    if (request.external_diagnoses && request.external_diagnoses.length > 0) {
-      const createdDiagnoses = await this.prismaService.$transaction(
-        request.external_diagnoses.map(({ id, name }) =>
-          this.prismaService.diagnosis.create({
-            data: { id, name },
-          }),
-        ),
+    if (!treatment)
+      throw new HttpException(
+        'Data diagnosis tidak ditemukan!',
+        HttpStatus.NOT_FOUND,
       );
-      externalDiagnosisIds = createdDiagnoses.map((d) => d.id);
-    }
 
-    const allDiagnosisIds = [
-      ...(request.diagnosis_ids || []),
-      ...externalDiagnosisIds,
-    ];
-
-    const uniqueDiagnosisIds = Array.from(new Set(allDiagnosisIds));
-
-    const created = await this.prismaService.$transaction(
-      uniqueDiagnosisIds.map((diagnosis_id) =>
-        this.prismaService.careSessionDiagnosis.create({
-          data: {
-            care_session_id: request.care_session_id,
-            diagnosis_id,
-          },
-        }),
-      ),
-    );
-
-    return created;
+    return treatment;
   }
 }

@@ -2,9 +2,11 @@ import { Module } from '@nestjs/common';
 
 import { DiagnosisController } from './diagnosis.controller';
 import { DiagnosisService } from './diagnosis.service';
+import { DiagnosisRepository } from './infrastucture/diagnosis.repository';
 
 @Module({
+  providers: [DiagnosisService, DiagnosisRepository],
   controllers: [DiagnosisController],
-  providers: [DiagnosisService],
+  exports: [DiagnosisService],
 })
 export class DiagnosisModule {}
