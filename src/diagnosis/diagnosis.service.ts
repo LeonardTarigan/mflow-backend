@@ -1,5 +1,10 @@
+import * as https from 'https';
+
+import { HttpService } from '@nestjs/axios';
 import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
+import * as cheerio from 'cheerio';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
+import { firstValueFrom } from 'rxjs';
 import { handlePrismaError } from 'src/common/prisma-error.handler';
 import { Logger } from 'winston';
 
@@ -8,6 +13,7 @@ import {
   CreateDiagnosisResponse,
   GetAllDiagnosesResponse,
   GetDiagnosisByIdResponse,
+  IcdDiagnosis,
 } from './domain/model/diagnosis.model';
 import { DiagnosisRepository } from './infrastucture/diagnosis.repository';
 
@@ -16,6 +22,7 @@ export class DiagnosisService {
   constructor(
     @Inject(WINSTON_MODULE_PROVIDER) private logger: Logger,
     private diagnosisRepository: DiagnosisRepository,
+    private httpService: HttpService,
   ) {}
 
   async create(dto: CreateDiagnosisDto): Promise<CreateDiagnosisResponse> {
@@ -42,6 +49,50 @@ export class DiagnosisService {
     return {
       data: diagnoses,
     };
+  }
+
+  async getAllIcdDiagnoses(query: string): Promise<IcdDiagnosis[]> {
+    const baseUrl = `https://icd.who.int/browse10/2010/en/ACSearch`;
+    const url = `${baseUrl}?q=${encodeURIComponent(query)}`;
+
+    this.logger.info(`Fetching ICD data from: ${url}`);
+
+    try {
+      const agent = new https.Agent({
+        rejectUnauthorized: false,
+      });
+
+      const response = await firstValueFrom(
+        this.httpService.get(url, {
+          headers: {
+            Accept: 'text/html',
+            'User-Agent': 'Chrome/108.0.0.0',
+          },
+          httpsAgent: agent,
+        }),
+      );
+
+      const $ = cheerio.load(response.data);
+      const results: IcdDiagnosis[] = [];
+
+      $('.searchresults .oneentity').each((_, el) => {
+        const code = $(el).find('> span > span[thecode]').text().trim();
+        const title = $(el).find('> span > .title > .titlelabel').text().trim();
+        const link = $(el).attr('data-stemid');
+
+        if (code && title) {
+          results.push({ code, title, link: link || null });
+        }
+      });
+
+      return results;
+    } catch (error) {
+      this.logger.error('Error fetching ICD data:', error);
+      throw new HttpException(
+        'Failed to fetch ICD data',
+        HttpStatus.BAD_GATEWAY,
+      );
+    }
   }
 
   async getById(id: string): Promise<GetDiagnosisByIdResponse> {

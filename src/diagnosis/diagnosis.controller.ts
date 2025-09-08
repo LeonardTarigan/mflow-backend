@@ -32,6 +32,11 @@ export class DiagnosisController {
     };
   }
 
+  @Get('icd')
+  async getAllIcdDiagnoses(@Query('query') query: string) {
+    return this.diagnosisService.getAllIcdDiagnoses(query);
+  }
+
   @Post()
   @HttpCode(HttpStatus.CREATED)
   async add(
