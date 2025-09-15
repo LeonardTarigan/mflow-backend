@@ -28,6 +28,15 @@ export class DrugOrderEntity {
   dose: string;
 }
 
+export class DrugOrderItem {
+  id: number;
+  name: string;
+  quantity: number;
+  price: number;
+  dose: string;
+  unit: string;
+}
+
 export class CreateDrugOrderDto extends OmitType(DrugOrderEntity, [
   'id',
   'applied_price',

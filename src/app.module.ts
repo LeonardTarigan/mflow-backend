@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 
 import { AuthModule } from './auth/auth.module';
+import { CareSessionModule } from './care-session/care-session.module';
 import { CommonModule } from './common/common.module';
 import { DiagnosisModule } from './diagnosis/diagnosis.module';
 import { DrugModule } from './drug/drug.module';
@@ -33,6 +34,7 @@ import { VitalSignModule } from './vital-sign/vital-sign.module';
     MailModule,
     SessionTreatmentModule,
     SessionDiagnosisModule,
+    CareSessionModule,
   ],
   controllers: [],
   providers: [],
