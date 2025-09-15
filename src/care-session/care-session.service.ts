@@ -12,6 +12,7 @@ import {
   QueueStatusFilter,
   UpdateCareSessionDto,
   UpdateCareSessionResponse,
+  UpdateCareSessionStatusDto,
 } from './domain/model/care-session.model';
 import { CareSessionRepository } from './infrastucture/care-session.repository';
 
@@ -41,9 +42,10 @@ export class CareSessionService {
     search?: string,
     status?: QueueStatusFilter,
     roomId?: number,
+    doctorId?: string,
   ): Promise<GetAllCareSessionsResponse> {
     this.logger.info(
-      `CareSessionService.getAll(page=${pageNumber}, search=${search}), pageSize=${pageSize}`,
+      `CareSessionService.getAll(page=${pageNumber}, search=${search}), pageSize=${pageSize}, status=${status}, roomId=${roomId}, doctorId=${doctorId}`,
     );
 
     if (pageNumber < 1) pageNumber = 1;
@@ -61,6 +63,7 @@ export class CareSessionService {
           search,
           status,
           roomId,
+          doctorId,
         );
 
       totalData = totalPaginatedRawCareSessions;
@@ -69,7 +72,12 @@ export class CareSessionService {
       );
     } else {
       const [rawCareSessions, totalRawCareSessions] =
-        await this.careSessionRepository.findMany(search, status, roomId);
+        await this.careSessionRepository.findMany(
+          search,
+          status,
+          roomId,
+          doctorId,
+        );
 
       totalData = totalRawCareSessions;
       careSessions = CareSessionMapper.toCareSessionDetail(rawCareSessions);
@@ -97,11 +105,35 @@ export class CareSessionService {
       `CareSessionService.update(id=${id}, dto=${JSON.stringify(dto)})`,
     );
 
+    try {
+      const res = await this.careSessionRepository.update(id, dto);
+
+      return res;
+    } catch (error) {
+      handlePrismaError(error, this.logger, {
+        P2025: 'Data pelayanan tidak ditemukan',
+      });
+
+      throw error;
+    }
+  }
+
+  async updateStatus(
+    id: number,
+    dto: UpdateCareSessionStatusDto,
+  ): Promise<UpdateCareSessionResponse> {
+    this.logger.info(
+      `CareSessionService.updateStatus(id=${id}, dto=${JSON.stringify(dto)})`,
+    );
+
     const careSession =
       await this.careSessionRepository.findByIdWithRelations(id);
 
     if (!careSession) {
-      throw new HttpException('Care session not found', HttpStatus.NOT_FOUND);
+      throw new HttpException(
+        'Data pelayanan tidak ditemukan',
+        HttpStatus.NOT_FOUND,
+      );
     }
 
     if (dto.status === 'IN_CONSULTATION') {
@@ -143,7 +175,7 @@ export class CareSessionService {
       return res;
     } catch (error) {
       handlePrismaError(error, this.logger, {
-        P2025: 'Data obat tidak ditemukan',
+        P2025: 'Data pelayanan tidak ditemukan',
       });
 
       throw error;

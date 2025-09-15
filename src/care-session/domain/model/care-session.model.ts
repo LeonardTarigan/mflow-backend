@@ -1,4 +1,4 @@
-import { OmitType, PartialType } from '@nestjs/mapped-types';
+import { OmitType, PartialType, PickType } from '@nestjs/mapped-types';
 import { QueueStatus } from '@prisma/client';
 import {
   IsEnum,
@@ -65,10 +65,20 @@ export class CareSessionDetail extends OmitType(CareSessionEntity, [
   treatments: TreatmentEntity[];
 }
 
-export class CreateCareSessionDto extends OmitType(CareSessionEntity, ['id']) {}
+export class CreateCareSessionDto extends OmitType(CareSessionEntity, [
+  'id',
+] as const) {}
 export class UpdateCareSessionDto extends PartialType(
-  OmitType(CareSessionEntity, ['id', 'patient_id', 'doctor_id', 'room_id']),
+  OmitType(CareSessionEntity, [
+    'id',
+    'patient_id',
+    'doctor_id',
+    'room_id',
+  ] as const),
 ) {}
+export class UpdateCareSessionStatusDto extends PickType(CareSessionEntity, [
+  'status',
+] as const) {}
 
 export class CreateCareSessionResponse extends CareSessionEntity {}
 export class UpdateCareSessionResponse extends CareSessionEntity {}

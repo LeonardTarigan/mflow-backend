@@ -5,90 +5,57 @@ import {
   HttpCode,
   HttpStatus,
   Param,
+  ParseIntPipe,
+  ParseUUIDPipe,
   Patch,
 } from '@nestjs/common';
 import { ApiResponse } from 'src/common/api.model';
 
 import {
-  GetActiveDoctorQueueResponse,
-  GetActivePharmacyQueueResponse,
-  UpdateQueueDto,
-  UpdateQueueResponse,
-} from './queue.model';
+  ActiveQueue,
+  MainQueueItem,
+  UpdateQueueStatusDto,
+  UpdateQueueStatusResponse,
+} from './domain/model/queue.model';
 import { QueueService } from './queue.service';
 
 @Controller('/api/queues')
 export class QueueController {
   constructor(private queueService: QueueService) {}
 
-  // @Post()
-  // @HttpCode(HttpStatus.CREATED)
-  // async add(@Body() dto: AddQueueDto): Promise<ApiResponse<AddQueueResponse>> {
-  //   const res = await this.queueService.add(dto);
+  @Get()
+  @HttpCode(HttpStatus.OK)
+  async getMainQueue(): Promise<ApiResponse<MainQueueItem[]>> {
+    const res = await this.queueService.getMainQueue();
 
-  //   return { data: res };
-  // }
-
-  // @Get()
-  // @HttpCode(HttpStatus.OK)
-  // async getAll(
-  //   @Query('page') page: string,
-  //   @Query('pageSize') pageSize: string,
-  //   @Query('isQueueActive') isQueueActive: string,
-  //   @Query('roomId') roomId?: string,
-  //   @Query('status') status?: string,
-  //   @Query('search') search?: string,
-  // ): Promise<ApiResponse<GetAllQueuesDetail[]>> {
-  //   const parsedPageSize = pageSize ? parseInt(pageSize, 10) : undefined;
-  //   const parsedRoomId = roomId ? parseInt(roomId, 10) : undefined;
-
-  //   const isQueueActiveBool =
-  //     isQueueActive === undefined ? true : isQueueActive === 'true';
-
-  //   const { data, meta } = await this.queueService.getAll(
-  //     page,
-  //     parsedPageSize,
-  //     isQueueActiveBool,
-  //     parsedRoomId,
-  //     status,
-  //     search,
-  //   );
-
-  //   return {
-  //     data,
-  //     meta,
-  //   };
-  // }
+    return res;
+  }
 
   @Get('/pharmacy')
   @HttpCode(HttpStatus.OK)
-  async getActivePharmacyQueue(): Promise<
-    ApiResponse<GetActivePharmacyQueueResponse>
-  > {
-    const res = await this.queueService.getActivePharmacyQueues();
-    return {
-      data: res,
-    };
+  async getPharmacyQueue(): Promise<ApiResponse<ActiveQueue>> {
+    const res = await this.queueService.getPharmacyQueue();
+
+    return { data: res };
   }
 
-  @Get('/doctor/:id')
+  @Get('/doctor/:doctor_id')
   @HttpCode(HttpStatus.OK)
   async getActiveDoctorQueue(
-    @Param('id') id: string,
-  ): Promise<ApiResponse<GetActiveDoctorQueueResponse>> {
-    const res = await this.queueService.getActiveDoctorQueue(id);
-    return {
-      data: res,
-    };
+    @Param('doctor_id', ParseUUIDPipe) doctorId: string,
+  ): Promise<ApiResponse<ActiveQueue>> {
+    const res = await this.queueService.getDoctorQueue(doctorId);
+
+    return { data: res };
   }
 
-  @Patch('/:id')
+  @Patch('/:id/status')
   @HttpCode(HttpStatus.OK)
-  async update(
-    @Param('id') id: string,
-    @Body() dto: UpdateQueueDto,
-  ): Promise<ApiResponse<UpdateQueueResponse>> {
-    const res = await this.queueService.update(id, dto);
+  async updateStatus(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateQueueStatusDto,
+  ): Promise<ApiResponse<UpdateQueueStatusResponse>> {
+    const res = await this.queueService.updateStatus(id, dto);
 
     return {
       data: res,

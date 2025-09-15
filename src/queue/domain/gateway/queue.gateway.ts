@@ -1,7 +1,6 @@
 import { Inject } from '@nestjs/common';
 import {
   ConnectedSocket,
-  MessageBody,
   OnGatewayConnection,
   OnGatewayDisconnect,
   SubscribeMessage,
@@ -11,8 +10,6 @@ import {
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Server, Socket } from 'socket.io';
 import { Logger } from 'winston';
-
-import { CalledQueue, WaitingQueueDetail } from './queue.model';
 
 @WebSocketGateway({
   cors: {
@@ -25,30 +22,27 @@ export class QueueGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   constructor(@Inject(WINSTON_MODULE_PROVIDER) private logger: Logger) {}
 
-  handleConnection(client: any) {
+  handleConnection(client: Socket): void {
     this.logger.info(`Client connected: ${client.id}`);
   }
 
-  handleDisconnect(client: any) {
+  handleDisconnect(client: Socket): void {
     this.logger.info(`Client disconnected: ${client.id}`);
   }
 
-  emitWaitingQueueUpdate(data: WaitingQueueDetail[]) {
-    this.logger.info(`Waiting queue updated: `, data);
-    this.server.emit('waiting_queue_update', data);
+  emitWaitingQueueUpdate(): void {
+    this.logger.info(`Waiting queue updated`);
+    this.server.emit('waiting_queue_update');
   }
 
-  emitCalledQueueUpdate(data: CalledQueue) {
-    this.logger.info(`Called queue updated: `, data);
-    this.server.emit('called_queue_update', data);
+  emitCalledQueueUpdate(): void {
+    this.logger.info(`Called queue updated: `);
+    this.server.emit('called_queue_update');
   }
 
   @SubscribeMessage('trigger_called_queue_update')
-  handleTriggerCalledQueueUpdate(
-    @MessageBody() data: CalledQueue,
-    @ConnectedSocket() client: Socket,
-  ) {
-    this.logger.info(`Triggered from client ${client.id}: `, data);
-    this.emitCalledQueueUpdate(data);
+  handleTriggerCalledQueueUpdate(@ConnectedSocket() client: Socket): void {
+    this.logger.info(`Triggered from client ${client.id}`);
+    this.emitCalledQueueUpdate();
   }
 }

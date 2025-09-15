@@ -71,6 +71,7 @@ export class CareSessionRepository {
     keyword?: string,
     status?: QueueStatusFilter,
     roomId?: number,
+    doctorId?: string,
   ): Prisma.CareSessionWhereInput {
     const where: Prisma.CareSessionWhereInput = {};
 
@@ -91,6 +92,10 @@ export class CareSessionRepository {
       where.room_id = roomId;
     }
 
+    if (doctorId) {
+      where.doctor_id = doctorId;
+    }
+
     return where;
   }
 
@@ -104,8 +109,9 @@ export class CareSessionRepository {
     keyword?: string,
     status?: QueueStatusFilter,
     roomId?: number,
+    doctorId?: string,
   ): Promise<[CareSessionRawResponse[], number]> {
-    const whereClause = this.getWhereClause(keyword, status, roomId);
+    const whereClause = this.getWhereClause(keyword, status, roomId, doctorId);
 
     return this.prisma.$transaction([
       this.prisma.careSession.findMany({
@@ -123,8 +129,9 @@ export class CareSessionRepository {
     keyword?: string,
     status?: QueueStatusFilter,
     roomId?: number,
+    doctorId?: string,
   ): Promise<[CareSessionRawResponse[], number]> {
-    const whereClause = this.getWhereClause(keyword, status, roomId);
+    const whereClause = this.getWhereClause(keyword, status, roomId, doctorId);
 
     return this.prisma.$transaction([
       this.prisma.careSession.findMany({
@@ -136,6 +143,12 @@ export class CareSessionRepository {
       }),
       this.prisma.careSession.count({ where: whereClause }),
     ]);
+  }
+
+  async findById(id: number): Promise<CareSession> {
+    return this.prisma.careSession.findUnique({
+      where: { id },
+    });
   }
 
   // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
