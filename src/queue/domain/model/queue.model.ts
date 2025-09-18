@@ -19,3 +19,10 @@ export class UpdateQueueStatusDto extends PickType(CareSessionEntity, [
 ] as const) {}
 
 export class UpdateQueueStatusResponse extends CareSessionEntity {}
+
+export class WaitingScreenQueue {
+  id: number;
+  queue_number: string;
+  doctor_name: string;
+  room_name: string;
+}

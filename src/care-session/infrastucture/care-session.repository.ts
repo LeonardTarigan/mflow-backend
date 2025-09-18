@@ -14,6 +14,8 @@ const selectedFields: Prisma.CareSessionSelect = {
   },
   doctor: { select: { id: true, username: true } },
   room: { select: { id: true, name: true } },
+  created_at: true,
+  updated_at: true,
   VitalSign: {
     select: {
       height_cm: true,

@@ -18,7 +18,6 @@ export class PatientEntity {
   id: string;
 
   @IsString()
-  @IsOptional()
   @Matches(/^\d{2}\.\d{2}\.\d{2}$/, {
     message: 'Medical record number must be in the format XX.XX.XX',
   })

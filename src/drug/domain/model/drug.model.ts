@@ -21,6 +21,7 @@ export class DrugEntity {
 
   @IsInt()
   @Min(0)
+  @IsOptional()
   stock: number;
 
   @IsInt()

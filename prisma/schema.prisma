@@ -41,15 +41,14 @@ model User {
 }
 
 model Drug {
-  id          Int         @id @default(autoincrement())
-  name        String      @unique @db.VarChar(100)
-  amount_sold Int         @default(0)
-  stock       Int         @default(0)
-  unit        String      @db.VarChar(50)
-  price       Int
-  created_at  DateTime    @default(now())
-  updated_at  DateTime    @updatedAt
-  DrugOrder   DrugOrder[]
+  id         Int         @id @default(autoincrement())
+  name       String      @unique @db.VarChar(100)
+  stock      Int         @default(0)
+  unit       String      @db.VarChar(50)
+  price      Int
+  created_at DateTime    @default(now())
+  updated_at DateTime    @updatedAt
+  DrugOrder  DrugOrder[]
 
   @@map("drugs")
 }

@@ -1,6 +1,7 @@
 import { Inject } from '@nestjs/common';
 import {
   ConnectedSocket,
+  MessageBody,
   OnGatewayConnection,
   OnGatewayDisconnect,
   SubscribeMessage,
@@ -10,6 +11,8 @@ import {
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Server, Socket } from 'socket.io';
 import { Logger } from 'winston';
+
+import { WaitingScreenQueue } from '../model/queue.model';
 
 @WebSocketGateway({
   cors: {
@@ -35,14 +38,17 @@ export class QueueGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.server.emit('waiting_queue_update');
   }
 
-  emitCalledQueueUpdate(): void {
-    this.logger.info(`Called queue updated: `);
-    this.server.emit('called_queue_update');
+  emitCalledQueueUpdate(data: WaitingScreenQueue): void {
+    this.logger.info(`Called queue updated: `, data);
+    this.server.emit('called_queue_update', data);
   }
 
   @SubscribeMessage('trigger_called_queue_update')
-  handleTriggerCalledQueueUpdate(@ConnectedSocket() client: Socket): void {
+  handleTriggerCalledQueueUpdate(
+    @MessageBody() data: WaitingScreenQueue,
+    @ConnectedSocket() client: Socket,
+  ): void {
     this.logger.info(`Triggered from client ${client.id}`);
-    this.emitCalledQueueUpdate();
+    this.emitCalledQueueUpdate(data);
   }
 }
