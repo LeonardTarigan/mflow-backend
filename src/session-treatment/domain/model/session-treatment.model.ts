@@ -1,4 +1,4 @@
-import { OmitType } from '@nestjs/mapped-types';
+import { OmitType, PickType } from '@nestjs/mapped-types';
 import { IsInt, IsNotEmpty, IsNumber, Min } from 'class-validator';
 
 export class SessionTreatmentEntity {
@@ -25,5 +25,10 @@ export class CreateSessionTreatmentDto extends OmitType(
   SessionTreatmentEntity,
   ['applied_price'] as const,
 ) {}
+export class DeleteSessionTreatmentDto extends PickType(
+  SessionTreatmentEntity,
+  ['care_session_id', 'treatment_id'] as const,
+) {}
 
 export class CreateSessionTreatmentResponse extends SessionTreatmentEntity {}
+export class DeleteSessionTreatmentResponse extends SessionTreatmentEntity {}

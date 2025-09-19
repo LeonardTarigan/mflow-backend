@@ -56,7 +56,15 @@ export class CareSessionDetail extends OmitType(CareSessionEntity, [
   'doctor_id',
   'room_id',
 ]) {
-  patient: Pick<PatientEntity, 'id' | 'name' | 'medical_record_number'>;
+  patient: Pick<
+    PatientEntity,
+    | 'id'
+    | 'name'
+    | 'medical_record_number'
+    | 'birth_date'
+    | 'gender'
+    | 'occupation'
+  >;
   doctor: Pick<UserEntity, 'id' | 'username'>;
   room: RoomEntity;
   vital_sign: VitalSignEntity | null;

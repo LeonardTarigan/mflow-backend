@@ -11,4 +11,18 @@ export class SessionTreatmentRepository {
   ): Promise<CareSessionTreatment> {
     return this.prisma.careSessionTreatment.create({ data });
   }
+
+  async delete(
+    careSessionId: number,
+    treatmentId: number,
+  ): Promise<CareSessionTreatment> {
+    return this.prisma.careSessionTreatment.delete({
+      where: {
+        care_session_id_treatment_id: {
+          care_session_id: careSessionId,
+          treatment_id: treatmentId,
+        },
+      },
+    });
+  }
 }

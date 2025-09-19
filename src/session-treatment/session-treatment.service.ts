@@ -7,6 +7,8 @@ import { Logger } from 'winston';
 import {
   CreateSessionTreatmentDto,
   CreateSessionTreatmentResponse,
+  DeleteSessionTreatmentDto,
+  DeleteSessionTreatmentResponse,
 } from './domain/model/session-treatment.model';
 import { SessionTreatmentRepository } from './infrastucture/session-treatment.repository';
 
@@ -38,6 +40,28 @@ export class SessionTreatmentService {
       });
 
       this.logger.error(`Error adding session treatment: ${error.message}`);
+      throw error;
+    }
+  }
+
+  async delete(
+    dto: DeleteSessionTreatmentDto,
+  ): Promise<DeleteSessionTreatmentResponse> {
+    this.logger.info(
+      `SessionTreatmentService.delete(care_session_id=${dto.care_session_id}, treatment_id=${dto.treatment_id})`,
+    );
+
+    try {
+      const res = await this.sessionTreatmentRepository.delete(
+        dto.care_session_id,
+        dto.treatment_id,
+      );
+
+      return res;
+    } catch (error) {
+      handlePrismaError(error, this.logger);
+
+      this.logger.error(`Error deleting session treatment: ${error.message}`);
       throw error;
     }
   }

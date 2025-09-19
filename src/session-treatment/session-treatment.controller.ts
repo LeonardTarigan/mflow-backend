@@ -1,9 +1,18 @@
-import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  HttpCode,
+  HttpStatus,
+  Post,
+} from '@nestjs/common';
 import { ApiResponse } from 'src/common/api.model';
 
 import {
   CreateSessionTreatmentDto,
   CreateSessionTreatmentResponse,
+  DeleteSessionTreatmentDto,
+  DeleteSessionTreatmentResponse,
 } from './domain/model/session-treatment.model';
 import { SessionTreatmentService } from './session-treatment.service';
 
@@ -17,6 +26,16 @@ export class SessionTreatmentController {
     @Body() dto: CreateSessionTreatmentDto,
   ): Promise<ApiResponse<CreateSessionTreatmentResponse>> {
     const res = await this.sessionTreatmentService.create(dto);
+
+    return { data: res };
+  }
+
+  @Delete()
+  @HttpCode(HttpStatus.OK)
+  async delete(
+    @Body() dto: DeleteSessionTreatmentDto,
+  ): Promise<ApiResponse<DeleteSessionTreatmentResponse>> {
+    const res = await this.sessionTreatmentService.delete(dto);
 
     return { data: res };
   }
