@@ -54,6 +54,7 @@ const selectedFields: Prisma.CareSessionSelect = {
   },
   DrugOrder: {
     select: {
+      id: true,
       applied_price: true,
       quantity: true,
       dose: true,

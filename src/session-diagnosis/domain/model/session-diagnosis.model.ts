@@ -15,5 +15,7 @@ export class CreateSessionDiagnosisDto extends SessionDiagnosisEntity {
   @IsNotEmpty()
   diagnosis_name: string;
 }
+export class DeleteSessionDiagnosisDto extends SessionDiagnosisEntity {}
 
 export class CreateSessionDiagnosisResponse extends SessionDiagnosisEntity {}
+export class DeleteSessionDiagnosisResponse extends SessionDiagnosisEntity {}

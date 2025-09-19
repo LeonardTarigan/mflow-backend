@@ -7,6 +7,8 @@ import { Logger } from 'winston';
 import {
   CreateSessionDiagnosisDto,
   CreateSessionDiagnosisResponse,
+  DeleteSessionDiagnosisDto,
+  DeleteSessionDiagnosisResponse,
 } from './domain/model/session-diagnosis.model';
 import { SessionDiagnosisRepository } from './infrastucture/session-diagnosis.repository';
 
@@ -42,6 +44,28 @@ export class SessionDiagnosisService {
       });
 
       this.logger.error(`Error adding session treatment: ${error.message}`);
+      throw error;
+    }
+  }
+
+  async delete(
+    dto: DeleteSessionDiagnosisDto,
+  ): Promise<DeleteSessionDiagnosisResponse> {
+    this.logger.info(
+      `SessionDiagnosisService.delete(care_session_id=${dto.care_session_id}, diagnosis_id=${dto.diagnosis_id})`,
+    );
+
+    try {
+      const res = await this.sessionDiagnosisRepository.delete(
+        dto.care_session_id,
+        dto.diagnosis_id,
+      );
+
+      return res;
+    } catch (error) {
+      handlePrismaError(error, this.logger);
+
+      this.logger.error(`Error deleting session diagnosis: ${error.message}`);
       throw error;
     }
   }
