@@ -43,3 +43,4 @@ export class CreateDrugOrderDto extends OmitType(DrugOrderEntity, [
 ] as const) {}
 
 export class CreateDrugOrderResponse extends DrugOrderEntity {}
+export class DeleteDrugOrderResponse extends DrugOrderEntity {}

@@ -7,6 +7,7 @@ import { Logger } from 'winston';
 import {
   CreateDrugOrderDto,
   CreateDrugOrderResponse,
+  DeleteDrugOrderResponse,
 } from './domain/model/drug.order.model';
 import { DrugOrderRepository } from './infrastucture/drug-order.repository';
 
@@ -52,6 +53,23 @@ export class DrugOrderService {
       });
 
       this.logger.error(`Error adding drug order: ${error.message}`);
+      throw error;
+    }
+  }
+
+  async delete(id: number): Promise<DeleteDrugOrderResponse> {
+    this.logger.info(`DrugOrderService.delete(${JSON.stringify(id)})`);
+
+    try {
+      const res = await this.drugOrderRepository.deleteByIdWithStockUpdate(id);
+
+      return res;
+    } catch (error) {
+      handlePrismaError(error, this.logger, {
+        P2003: 'ID pelayanan tidak ditemukan!',
+      });
+
+      this.logger.error(`Error deleting drug order: ${error.message}`);
       throw error;
     }
   }

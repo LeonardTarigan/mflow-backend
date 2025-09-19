@@ -32,11 +32,35 @@ export class DrugOrderRepository {
         where: { id: drugId },
         data: {
           stock: drug.stock - quantity,
-          amount_sold: drug.amount_sold + quantity,
         },
       });
 
       return createdOrder;
+    });
+  }
+
+  async deleteByIdWithStockUpdate(id: number): Promise<DrugOrder> {
+    return this.prisma.$transaction(async (tx) => {
+      const drug = await tx.drug.findUnique({ where: { id } });
+
+      if (!drug)
+        throw new HttpException(
+          'Data obat tidak ditemukan',
+          HttpStatus.NOT_FOUND,
+        );
+
+      const deletedOrder = await tx.drugOrder.delete({
+        where: { id },
+      });
+
+      await tx.drug.update({
+        where: { id: id },
+        data: {
+          stock: drug.stock - deletedOrder.quantity,
+        },
+      });
+
+      return deletedOrder;
     });
   }
 }
