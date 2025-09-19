@@ -46,9 +46,9 @@ export class PatientEntity {
 
   @IsString()
   @IsNotEmpty()
-  @Matches(/^628\d{9,12}$/, {
+  @Matches(/^\+628[0-9]{7,12}$/, {
     message:
-      'Phone number must be a valid Indonesian format (e.g., 6281234567890)',
+      'Phone number must be a valid Indonesian format (e.g., +6281234567890)',
   })
   phone_number: string;
 
@@ -60,7 +60,10 @@ export class PatientEntity {
   gender: Gender;
 }
 
-export class CreatePatientDto extends OmitType(PatientEntity, ['id']) {}
+export class CreatePatientDto extends OmitType(PatientEntity, [
+  'id',
+  'medical_record_number',
+]) {}
 export class UpdatePatientDto extends PartialType(CreatePatientDto) {}
 
 export class GetAllPatientsResponse {

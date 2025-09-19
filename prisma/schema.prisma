@@ -65,7 +65,7 @@ model Room {
 
 model Patient {
   id                    String        @id @default(uuid()) @db.Uuid
-  medical_record_number String?       @unique @db.VarChar(16)
+  medical_record_number String        @unique @db.VarChar(16)
   nik                   String        @unique @db.VarChar(16)
   name                  String        @db.VarChar(255)
   birth_date            DateTime      @db.Date

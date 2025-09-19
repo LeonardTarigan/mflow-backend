@@ -10,7 +10,14 @@ const selectedFields: Prisma.CareSessionSelect = {
   status: true,
   queue_number: true,
   patient: {
-    select: { id: true, name: true, medical_record_number: true },
+    select: {
+      id: true,
+      name: true,
+      medical_record_number: true,
+      birth_date: true,
+      gender: true,
+      occupation: true,
+    },
   },
   doctor: { select: { id: true, username: true } },
   room: { select: { id: true, name: true } },
@@ -162,6 +169,20 @@ export class CareSessionRepository {
         DrugOrder: true,
         CareSessionDiagnosis: true,
         CareSessionTreatment: true,
+      },
+    });
+  }
+
+  async countTodaysQueueNumber(
+    startTime: Date,
+    endTime: Date,
+  ): Promise<number> {
+    return this.prisma.careSession.count({
+      where: {
+        created_at: {
+          gte: startTime,
+          lte: endTime,
+        },
       },
     });
   }

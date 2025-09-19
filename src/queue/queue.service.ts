@@ -65,7 +65,7 @@ export class QueueService {
 
     await this.userService.getById(doctorId);
 
-    const careSessions = await this.careSessionService.getAll(
+    const ongingSession = await this.careSessionService.getAll(
       1,
       undefined,
       undefined,
@@ -74,15 +74,24 @@ export class QueueService {
       doctorId,
     );
 
+    const waitingSessions = await this.careSessionService.getAll(
+      1,
+      undefined,
+      undefined,
+      'WAITING_CONSULTATION',
+      undefined,
+      doctorId,
+    );
+
     let currentQueue: MainQueueItem;
 
-    if (careSessions.data.length !== 0) {
-      currentQueue = careSessions.data[0];
+    if (ongingSession.data.length !== 0) {
+      currentQueue = ongingSession.data[0];
     }
 
     return {
       current: currentQueue,
-      next_queues: careSessions.data.slice(1).map((session) => ({
+      next_queues: waitingSessions.data.map((session) => ({
         id: session.id,
         queue_number: session.queue_number,
       })),

@@ -22,9 +22,27 @@ export class PatientService {
     this.logger.info(`PatientService.add(${JSON.stringify(dto)})`);
 
     try {
+      const lastPatient = await this.patientRepository.findLastestPatientMrn();
+
+      let nextNumber = 1;
+
+      if (lastPatient) {
+        const lastNumber = parseInt(
+          lastPatient.medical_record_number.replace(/\./g, ''),
+          10,
+        );
+        nextNumber = lastNumber + 1;
+      }
+
+      const formattedMrNumber = nextNumber
+        .toString()
+        .padStart(6, '0')
+        .replace(/(\d{2})(\d{2})(\d{2})/, '$1.$2.$3');
+
       const res = await this.patientRepository.create({
         ...dto,
         birth_date: new Date(dto.birth_date).toISOString(),
+        medical_record_number: formattedMrNumber,
       });
 
       return res;

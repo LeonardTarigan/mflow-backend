@@ -67,6 +67,23 @@ export class PatientRepository {
     });
   }
 
+  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+  async findLastestPatientMrn() {
+    const patient = await this.prisma.patient.findFirst({
+      where: {
+        medical_record_number: { not: null },
+      },
+      orderBy: {
+        medical_record_number: 'desc',
+      },
+      select: {
+        medical_record_number: true,
+      },
+    });
+
+    return patient;
+  }
+
   async update(id: string, data: UpdatePatientDto): Promise<Patient> {
     return this.prisma.patient.update({ where: { id }, data });
   }

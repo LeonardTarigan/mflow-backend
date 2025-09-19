@@ -67,6 +67,8 @@ export class CareSessionDetail extends OmitType(CareSessionEntity, [
 
 export class CreateCareSessionDto extends OmitType(CareSessionEntity, [
   'id',
+  'queue_number',
+  'status',
 ] as const) {}
 export class UpdateCareSessionDto extends PartialType(
   OmitType(CareSessionEntity, [

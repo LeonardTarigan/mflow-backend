@@ -1,4 +1,5 @@
 import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
+import { endOfDay, startOfDay } from 'date-fns';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { handlePrismaError } from 'src/common/prisma-error.handler';
 import { Logger } from 'winston';
@@ -27,7 +28,28 @@ export class CareSessionService {
     this.logger.info(`CareSessionService.create(${JSON.stringify(dto)})`);
 
     try {
-      const res = await this.careSessionRepository.create(dto);
+      const todayStart = startOfDay(new Date());
+      const todayEnd = endOfDay(new Date());
+
+      const countToday =
+        await this.careSessionRepository.countTodaysQueueNumber(
+          todayStart,
+          todayEnd,
+        );
+
+      const nextNumber = countToday + 1;
+
+      if (nextNumber > 999) {
+        throw new Error('Queue limit exceeded for today');
+      }
+
+      const queueNumber = `U${String(nextNumber).padStart(3, '0')}`;
+
+      const res = await this.careSessionRepository.create({
+        ...dto,
+        queue_number: queueNumber,
+        status: 'WAITING_CONSULTATION',
+      });
 
       return res;
     } catch (error) {
