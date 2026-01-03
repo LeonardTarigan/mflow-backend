@@ -161,6 +161,15 @@ export class CareSessionRepository {
     });
   }
 
+  async findRunningDoctorSession(doctorId: string): Promise<CareSession> {
+    return this.prisma.careSession.findFirst({
+      where: {
+        doctor_id: doctorId,
+        status: 'IN_CONSULTATION',
+      },
+    });
+  }
+
   // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   async findByIdWithRelations(id: number) {
     return this.prisma.careSession.findUnique({

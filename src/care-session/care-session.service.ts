@@ -148,50 +148,62 @@ export class CareSessionService {
       `CareSessionService.updateStatus(id=${id}, dto=${JSON.stringify(dto)})`,
     );
 
-    const careSession =
-      await this.careSessionRepository.findByIdWithRelations(id);
-
-    if (!careSession) {
-      throw new HttpException(
-        'Data pelayanan tidak ditemukan',
-        HttpStatus.NOT_FOUND,
-      );
-    }
-
-    if (dto.status === 'IN_CONSULTATION') {
-      if (!careSession.VitalSign) {
-        throw new HttpException(
-          'Lengkapi data vital sign terlebih dahulu sebelum memulai konsultasi',
-          HttpStatus.BAD_REQUEST,
-        );
-      }
-    }
-
-    if (dto.status === 'WAITING_MEDICATION') {
-      if (!careSession.DrugOrder || careSession.DrugOrder.length === 0) {
-        throw new HttpException(
-          'Lengkapi data pesanan obat terlebih dahulu sebelum pengambilan obat',
-          HttpStatus.BAD_REQUEST,
-        );
-      }
-    }
-
-    if (dto.status === 'WAITING_PAYMENT') {
-      const hasDiagnosis =
-        careSession.CareSessionDiagnosis &&
-        careSession.CareSessionDiagnosis.length > 0;
-      const hasTreatment =
-        careSession.CareSessionTreatment &&
-        careSession.CareSessionTreatment.length > 0;
-      if (!hasDiagnosis || !hasTreatment) {
-        throw new HttpException(
-          'Lengkapi data diagnosa dan tindakan terlebih dahulu sebelum pembayaran',
-          HttpStatus.BAD_REQUEST,
-        );
-      }
-    }
-
     try {
+      const careSession =
+        await this.careSessionRepository.findByIdWithRelations(id);
+
+      if (!careSession) {
+        throw new HttpException(
+          'Data pelayanan tidak ditemukan',
+          HttpStatus.NOT_FOUND,
+        );
+      }
+
+      if (dto.status === 'IN_CONSULTATION') {
+        if (!careSession.VitalSign) {
+          throw new HttpException(
+            'Lengkapi data vital sign terlebih dahulu sebelum memulai konsultasi',
+            HttpStatus.BAD_REQUEST,
+          );
+        }
+
+        const currentDoctorSession =
+          await this.careSessionRepository.findRunningDoctorSession(
+            careSession.doctor_id,
+          );
+
+        if (currentDoctorSession) {
+          throw new HttpException(
+            'Dokter ini sedang dalam proses konsultasi dengan pasien lain',
+            HttpStatus.BAD_REQUEST,
+          );
+        }
+      }
+
+      if (dto.status === 'WAITING_MEDICATION') {
+        if (!careSession.DrugOrder || careSession.DrugOrder.length === 0) {
+          throw new HttpException(
+            'Lengkapi data pesanan obat terlebih dahulu sebelum pengambilan obat',
+            HttpStatus.BAD_REQUEST,
+          );
+        }
+      }
+
+      if (dto.status === 'WAITING_PAYMENT') {
+        const hasDiagnosis =
+          careSession.CareSessionDiagnosis &&
+          careSession.CareSessionDiagnosis.length > 0;
+        const hasTreatment =
+          careSession.CareSessionTreatment &&
+          careSession.CareSessionTreatment.length > 0;
+        if (!hasDiagnosis || !hasTreatment) {
+          throw new HttpException(
+            'Lengkapi data diagnosa dan tindakan terlebih dahulu sebelum pembayaran',
+            HttpStatus.BAD_REQUEST,
+          );
+        }
+      }
+
       const res = await this.careSessionRepository.update(id, dto);
 
       return res;
