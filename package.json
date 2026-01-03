@@ -8,7 +8,7 @@
   "scripts": {
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
-    "dev": "cross-env NODE_EXTRA_CA_CERTS=./certs/custom-ca-chain.pem nest start --watch",
+    "dev": "cross-env nest start --watch",
     "start": "nest start",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main",
@@ -41,6 +41,7 @@
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.2",
     "date-fns": "^4.1.0",
+    "dayjs": "^1.11.19",
     "handlebars": "^4.7.8",
     "nest-winston": "^1.9.7",
     "nestjs-zod": "^4.3.1",

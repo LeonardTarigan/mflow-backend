@@ -9,7 +9,10 @@ import {
 import { Response } from 'express';
 
 import { FileGenerationService } from './domain/file-generation/file-generation.service';
-import { GenerateMedicalCardDto } from './domain/model/message.model';
+import {
+  GenerateMedicalCardDto,
+  GenerateReceiptDto,
+} from './domain/model/message.model';
 import { MessageService } from './message.service';
 
 @Controller('/api/messages')
@@ -39,6 +42,21 @@ export class MessageController {
     res.setHeader(
       'Content-Disposition',
       'inline; filename="medical-card-preview.pdf"',
+    );
+    res.send(buffer);
+  }
+
+  @Post('/receipts/preview')
+  @HttpCode(HttpStatus.OK)
+  async previewReceipt(
+    @Body() dto: GenerateReceiptDto,
+    @Res() res: Response,
+  ): Promise<void> {
+    const { buffer } = await this.fileGenerationService.generateReciptPdf(dto);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader(
+      'Content-Disposition',
+      'inline; filename="receipt-preview.pdf"',
     );
     res.send(buffer);
   }

@@ -3,7 +3,10 @@ import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
 
 import { FileGenerationService } from './domain/file-generation/file-generation.service';
-import { GenerateMedicalCardDto } from './domain/model/message.model';
+import {
+  GenerateMedicalCardDto,
+  GenerateReceiptDto,
+} from './domain/model/message.model';
 import { WhatsAppService } from './domain/whatsapp/whatsapp.service';
 
 @Injectable()
@@ -31,6 +34,19 @@ export class MessageService {
         patient.phone_number,
         'mflow_medical_card',
       ),
+    ]);
+  }
+
+  async sendReceiptMessage(dto: GenerateReceiptDto): Promise<void> {
+    const { buffer, patient_name, phone_number } =
+      await this.fileGenerationService.generateReciptPdf(dto);
+    const filename = `Nota Pembayaran - ${patient_name}.pdf`;
+
+    const mediaId = await this.whatsappService.uploadMedia(buffer, filename);
+
+    await Promise.all([
+      this.whatsappService.sendDocument(phone_number, mediaId, filename),
+      this.whatsappService.sendTemplate(phone_number, 'mflow_receipt'),
     ]);
   }
 }
