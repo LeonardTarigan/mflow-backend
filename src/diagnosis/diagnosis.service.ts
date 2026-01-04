@@ -100,11 +100,11 @@ export class DiagnosisService {
 
     const treatment = await this.diagnosisRepository.findById(id);
 
-    if (!treatment)
-      throw new HttpException(
-        'Data diagnosis tidak ditemukan!',
-        HttpStatus.NOT_FOUND,
-      );
+    // if (!treatment)
+    //   throw new HttpException(
+    //     'Data diagnosis tidak ditemukan!',
+    //     HttpStatus.NOT_FOUND,
+    //   );
 
     return treatment;
   }

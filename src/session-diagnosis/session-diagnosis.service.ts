@@ -27,16 +27,16 @@ export class SessionDiagnosisService {
 
     try {
       const diagnosis = await this.diagnosisService.getById(dto.diagnosis_id);
-
       if (!diagnosis) {
         await this.diagnosisService.create({
           id: dto.diagnosis_id,
           name: dto.diagnosis_name,
         });
       }
-
-      const res = await this.sessionDiagnosisRepository.create(dto);
-
+      const res = await this.sessionDiagnosisRepository.create({
+        diagnosis_id: dto.diagnosis_id,
+        care_session_id: dto.care_session_id,
+      });
       return res;
     } catch (error) {
       handlePrismaError(error, this.logger, {
@@ -44,7 +44,6 @@ export class SessionDiagnosisService {
       });
 
       this.logger.error(`Error adding session treatment: ${error.message}`);
-      throw error;
     }
   }
 
