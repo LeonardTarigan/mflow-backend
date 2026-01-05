@@ -2,6 +2,7 @@ import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { endOfDay, startOfDay } from 'date-fns';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { handlePrismaError } from 'src/common/prisma-error.handler';
+import { MessageService } from 'src/message/message.service';
 import { Logger } from 'winston';
 
 import { CareSessionMapper } from './domain/mapper/care-session.mapper';
@@ -22,6 +23,7 @@ export class CareSessionService {
   constructor(
     @Inject(WINSTON_MODULE_PROVIDER) private logger: Logger,
     private careSessionRepository: CareSessionRepository,
+    private messageService: MessageService,
   ) {}
 
   async create(dto: CreateCareSessionDto): Promise<CreateCareSessionResponse> {
@@ -176,7 +178,7 @@ export class CareSessionService {
 
         const currentDoctorSession =
           await this.careSessionRepository.findRunningDoctorSession(
-            careSession.doctor_id,
+            careSession.doctor.id,
           );
 
         if (currentDoctorSession) {
@@ -212,6 +214,42 @@ export class CareSessionService {
       }
 
       const res = await this.careSessionRepository.update(id, dto);
+
+      if (res.status === 'COMPLETED') {
+        const mappedDrugOrder = careSession.DrugOrder.map((d) => ({
+          name: d.drug.name,
+          price: d.applied_price,
+          quantity: d.quantity,
+        }));
+
+        const mappedTreatments = careSession.CareSessionTreatment.map((d) => ({
+          name: d.treatment.name,
+          price: d.applied_price,
+          quantity: d.quantity,
+        }));
+
+        const totalDrugOrderPrice = mappedDrugOrder.reduce(
+          (sum, item) => sum + item.price * item.quantity,
+          0,
+        );
+        const totalTreatmentPrice = mappedTreatments.reduce(
+          (sum, item) => sum + item.price * item.quantity,
+          0,
+        );
+
+        const totalPrice = totalDrugOrderPrice + totalTreatmentPrice;
+
+        this.messageService.sendReceiptMessage({
+          doctor_name: careSession.doctor.username,
+          patient_name: careSession.patient.name,
+          transaction_date: careSession.created_at.toISOString(),
+          phone_number: careSession.patient.phone_number,
+          medical_record_number: careSession.patient.medical_record_number,
+          total_amount: totalPrice,
+          drug_order_list: mappedDrugOrder,
+          treatment_list: mappedTreatments,
+        });
+      }
 
       return res;
     } catch (error) {

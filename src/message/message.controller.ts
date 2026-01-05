@@ -46,6 +46,12 @@ export class MessageController {
     res.send(buffer);
   }
 
+  @Post('/receipts')
+  @HttpCode(HttpStatus.OK)
+  async sendReceiptMessage(@Body() dto: GenerateReceiptDto): Promise<void> {
+    await this.messageService.sendReceiptMessage(dto);
+  }
+
   @Post('/receipts/preview')
   @HttpCode(HttpStatus.OK)
   async previewReceipt(

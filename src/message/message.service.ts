@@ -30,10 +30,10 @@ export class MessageService {
         mediaId,
         filename,
       ),
-      this.whatsappService.sendTemplate(
-        patient.phone_number,
-        'mflow_medical_card',
-      ),
+      // this.whatsappService.sendTemplate(
+      //   patient.phone_number,
+      //   'mflow_medical_card',
+      // ),
     ]);
   }
 
@@ -46,7 +46,7 @@ export class MessageService {
 
     await Promise.all([
       this.whatsappService.sendDocument(phone_number, mediaId, filename),
-      this.whatsappService.sendTemplate(phone_number, 'mflow_receipt'),
+      // this.whatsappService.sendTemplate(phone_number, 'mflow_receipt'),
     ]);
   }
 }

@@ -8,6 +8,7 @@ import { MessageService } from './message.service';
 
 @Module({
   imports: [PatientModule],
+  exports: [MessageService],
   controllers: [MessageController],
   providers: [MessageService, FileGenerationService, WhatsAppService],
 })

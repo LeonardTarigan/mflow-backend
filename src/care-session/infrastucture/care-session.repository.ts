@@ -144,7 +144,7 @@ export class CareSessionRepository {
     return this.prisma.$transaction([
       this.prisma.careSession.findMany({
         where: whereClause,
-        orderBy: { created_at: 'asc' },
+        orderBy: { created_at: status === 'COMPLETED' ? 'desc' : 'asc' },
         select: selectedFields,
       }),
       this.prisma.careSession.count({ where: whereClause }),
@@ -173,7 +173,7 @@ export class CareSessionRepository {
         skip: offset,
         take: limit,
         where: whereClause,
-        orderBy: { created_at: 'asc' },
+        orderBy: { created_at: 'desc' },
         select: selectedFields,
       }),
       this.prisma.careSession.count({ where: whereClause }),
@@ -201,9 +201,32 @@ export class CareSessionRepository {
       where: { id },
       include: {
         VitalSign: true,
-        DrugOrder: true,
+        DrugOrder: {
+          select: {
+            drug: { select: { name: true } },
+            quantity: true,
+            applied_price: true,
+          },
+        },
         CareSessionDiagnosis: true,
-        CareSessionTreatment: true,
+        CareSessionTreatment: {
+          select: {
+            treatment: { select: { name: true } },
+            quantity: true,
+            applied_price: true,
+          },
+        },
+        doctor: {
+          select: { id: true, username: true },
+        },
+        patient: {
+          select: {
+            id: true,
+            name: true,
+            phone_number: true,
+            medical_record_number: true,
+          },
+        },
       },
     });
   }

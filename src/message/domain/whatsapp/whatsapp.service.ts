@@ -43,6 +43,8 @@ export class WhatsAppService {
         );
       }
     } catch (error) {
+      // eslint-disable-next-line no-console
+      console.log(error);
       this.logger.error(`Failed to send WhatsApp message`, {
         error: error.message,
         payload,

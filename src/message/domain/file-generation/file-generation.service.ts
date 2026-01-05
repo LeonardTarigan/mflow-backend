@@ -155,11 +155,12 @@ export class FileGenerationService {
   async generateReciptPdf(
     dto: GenerateReceiptDto,
   ): Promise<GenerateReceiptResponse> {
-    const { patient_name, phone_number, ...rest } = dto;
+    const { patient_name, phone_number, transaction_date, ...rest } = dto;
 
     const docDefinition = this.getReceiptDocDefinition({
       ...rest,
       patient_name,
+      transaction_date: dayjs(transaction_date).format('DD MMMM YYYY'),
       printed_date: dayjs().format('DD MMMM YYYY HH:mm:ss'),
     });
 
@@ -204,7 +205,7 @@ export class FileGenerationService {
               color: '#374151',
             },
             {
-              text: formatRp(item.price),
+              text: formatRp(item.price * item.quantity),
               fontSize: 14,
               alignment: 'right',
               color: '#374151',
