@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { CareSession, Prisma } from '@prisma/client';
+import * as dayjs from 'dayjs';
 import { PrismaService } from 'src/common/prisma.service';
 
 import { QueueStatusFilter } from '../domain/model/care-session.model';
@@ -82,6 +83,7 @@ export class CareSessionRepository {
     status?: QueueStatusFilter,
     roomId?: number,
     doctorId?: string,
+    dateRange?: string,
   ): Prisma.CareSessionWhereInput {
     const where: Prisma.CareSessionWhereInput = {};
 
@@ -106,6 +108,15 @@ export class CareSessionRepository {
       where.doctor_id = doctorId;
     }
 
+    if (dateRange) {
+      const [startDate, endDate] = dateRange.split('_');
+
+      where.created_at = {
+        gte: dayjs(startDate).startOf('day').toDate(),
+        lte: dayjs(endDate).endOf('day').toDate(),
+      };
+    }
+
     return where;
   }
 
@@ -120,8 +131,15 @@ export class CareSessionRepository {
     status?: QueueStatusFilter,
     roomId?: number,
     doctorId?: string,
+    dateRange?: string,
   ): Promise<[CareSessionRawResponse[], number]> {
-    const whereClause = this.getWhereClause(keyword, status, roomId, doctorId);
+    const whereClause = this.getWhereClause(
+      keyword,
+      status,
+      roomId,
+      doctorId,
+      dateRange,
+    );
 
     return this.prisma.$transaction([
       this.prisma.careSession.findMany({
@@ -140,8 +158,15 @@ export class CareSessionRepository {
     status?: QueueStatusFilter,
     roomId?: number,
     doctorId?: string,
+    dateRange?: string,
   ): Promise<[CareSessionRawResponse[], number]> {
-    const whereClause = this.getWhereClause(keyword, status, roomId, doctorId);
+    const whereClause = this.getWhereClause(
+      keyword,
+      status,
+      roomId,
+      doctorId,
+      dateRange,
+    );
 
     return this.prisma.$transaction([
       this.prisma.careSession.findMany({

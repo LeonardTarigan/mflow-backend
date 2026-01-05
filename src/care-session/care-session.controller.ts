@@ -45,6 +45,8 @@ export class CareSessionController {
     @Query('roomId', new ParseIntPipe({ optional: true })) roomId: number,
     @Query('search') search: string,
     @Query('status') status: QueueStatusFilter,
+    @Query('doctorId') doctorId: string,
+    @Query('dateRange') dateRange: string,
   ): Promise<ApiResponse<CareSessionDetail[]>> {
     const { data, meta } = await this.careSessionService.getAll(
       page,
@@ -52,6 +54,8 @@ export class CareSessionController {
       search,
       status,
       roomId,
+      doctorId,
+      dateRange,
     );
 
     return {

@@ -54,7 +54,6 @@ export class CareSessionService {
       return res;
     } catch (error) {
       handlePrismaError(error, this.logger);
-      throw error;
     }
   }
 
@@ -65,58 +64,66 @@ export class CareSessionService {
     status?: QueueStatusFilter,
     roomId?: number,
     doctorId?: string,
+    dateRange?: string,
   ): Promise<GetAllCareSessionsResponse> {
     this.logger.info(
-      `CareSessionService.getAll(page=${pageNumber}, search=${search}), pageSize=${pageSize}, status=${status}, roomId=${roomId}, doctorId=${doctorId}`,
+      `CareSessionService.getAll(page=${pageNumber}, search=${search}), pageSize=${pageSize}, status=${status}, roomId=${roomId}, doctorId=${doctorId}, dateRange=${dateRange}`,
     );
 
-    if (pageNumber < 1) pageNumber = 1;
+    try {
+      if (pageNumber < 1) pageNumber = 1;
 
-    const offset = (pageNumber - 1) * pageSize;
+      const offset = (pageNumber - 1) * pageSize;
 
-    let careSessions: CareSessionDetail[];
-    let totalData: number;
+      let careSessions: CareSessionDetail[];
+      let totalData: number;
 
-    if (pageSize) {
-      const [rawPaginatedCareSessions, totalPaginatedRawCareSessions] =
-        await this.careSessionRepository.findManyWithPagination(
-          offset,
-          pageSize,
-          search,
-          status,
-          roomId,
-          doctorId,
+      if (pageSize) {
+        const [rawPaginatedCareSessions, totalPaginatedRawCareSessions] =
+          await this.careSessionRepository.findManyWithPagination(
+            offset,
+            pageSize,
+            search,
+            status,
+            roomId,
+            doctorId,
+            dateRange,
+          );
+
+        totalData = totalPaginatedRawCareSessions;
+        careSessions = CareSessionMapper.toCareSessionDetail(
+          rawPaginatedCareSessions,
         );
+      } else {
+        const [rawCareSessions, totalRawCareSessions] =
+          await this.careSessionRepository.findMany(
+            search,
+            status,
+            roomId,
+            doctorId,
+            dateRange,
+          );
 
-      totalData = totalPaginatedRawCareSessions;
-      careSessions = CareSessionMapper.toCareSessionDetail(
-        rawPaginatedCareSessions,
-      );
-    } else {
-      const [rawCareSessions, totalRawCareSessions] =
-        await this.careSessionRepository.findMany(
-          search,
-          status,
-          roomId,
-          doctorId,
-        );
+        totalData = totalRawCareSessions;
+        careSessions = CareSessionMapper.toCareSessionDetail(rawCareSessions);
+      }
 
-      totalData = totalRawCareSessions;
-      careSessions = CareSessionMapper.toCareSessionDetail(rawCareSessions);
+      const totalPage = Math.ceil(totalData / pageSize);
+
+      return {
+        data: careSessions,
+        meta: {
+          current_page: pageNumber,
+          previous_page: pageNumber > 1 ? pageNumber - 1 : null,
+          next_page: pageNumber < totalPage ? pageNumber + 1 : null,
+          total_page: totalPage,
+          total_data: totalData,
+        },
+      };
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.log(error);
     }
-
-    const totalPage = Math.ceil(totalData / pageSize);
-
-    return {
-      data: careSessions,
-      meta: {
-        current_page: pageNumber,
-        previous_page: pageNumber > 1 ? pageNumber - 1 : null,
-        next_page: pageNumber < totalPage ? pageNumber + 1 : null,
-        total_page: totalPage,
-        total_data: totalData,
-      },
-    };
   }
 
   async update(
